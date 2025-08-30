@@ -1,3 +1,5 @@
+import 'dotenv/config'; // This loads the variables from .env
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
