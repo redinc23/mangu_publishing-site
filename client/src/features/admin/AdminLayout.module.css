@@ -1,0 +1,42 @@
+.adminContainer {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.sidebar {
+  width: 250px;
+  background: var(--netflix-black);
+  color: white;
+  padding: 20px;
+}
+
+.sidebar h2 {
+  margin-bottom: 30px;
+  color: var(--accent-blue);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.navLink {
+  color: var(--netflix-gray);
+  text-decoration: none;
+  padding: 10px 15px;
+  border-radius: 4px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.navLink:hover {
+  background-color: #2c2c2c;
+  color: var(--netflix-white);
+}
+
+.mainContent {
+  flex: 1;
+  padding: 20px;
+  background-color: white;
+}
