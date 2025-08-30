@@ -1,0 +1,15 @@
+.trendingSection {
+  padding: 20px 4%;
+}
+.sectionHeader {
+  margin-bottom: 16px;
+}
+.sectionTitle {
+  font-size: 24px;
+  font-weight: 700;
+}
+.trendingGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+}

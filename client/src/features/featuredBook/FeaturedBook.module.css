@@ -1,0 +1,86 @@
+.featuredHero {
+  padding: 60px 4%;
+}
+.featuredContainer {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.featuredPoster img {
+  width: 300px;
+  height: 450px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.featuredInfo {
+  max-width: 800px;
+}
+.featuredTitle {
+  font-size: 48px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.featuredAuthor {
+  font-size: 18px;
+  color: var(--netflix-gray);
+  margin-bottom: 20px;
+}
+.featuredMeta {
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+.featuredMeta span {
+  margin-right: 8px;
+  color: var(--netflix-light-gray);
+}
+.featuredMeta i {
+  color: var(--accent-gold);
+  margin-right: 4px;
+}
+.featuredDescription {
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  color: var(--netflix-light-gray);
+}
+.featuredActions {
+  display: flex;
+  gap: 10px;
+}
+.btnPlay, .btnSecondary, .btnIcon {
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+.btnPlay {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--netflix-red);
+  color: #fff;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 4px;
+}
+.btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 4px;
+}
+.btnIcon {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  padding: 8px;
+  border-radius: 50%;
+  font-size: 18px;
+}
+.btnPlay:hover, .btnSecondary:hover, .btnIcon:hover {
+  background: rgba(255,255,255,0.3);
+}

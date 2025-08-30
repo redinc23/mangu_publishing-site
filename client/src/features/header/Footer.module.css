@@ -1,0 +1,40 @@
+.footer {
+  background: linear-gradient(to top, var(--netflix-black), rgba(20,20,20,0.95));
+  padding: 80px 4% 40px;
+  margin-top: 80px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.footerContent {
+  max-width: 1920px;
+  margin: 0 auto;
+}
+.footerGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 40px;
+  margin-bottom: 40px;
+}
+.footerColumn h4 {
+  color: var(--netflix-white);
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+.footerColumn a {
+  color: var(--netflix-gray);
+  text-decoration: none;
+  display: block;
+  margin-bottom: 12px;
+  font-size: 14px;
+  transition: color 0.3s;
+}
+.footerColumn a:hover {
+  color: var(--netflix-white);
+}
+.footerBottom {
+  text-align: center;
+  padding-top: 40px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--netflix-gray);
+  font-size: 14px;
+}

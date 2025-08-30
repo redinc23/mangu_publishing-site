@@ -1,0 +1,112 @@
+.hero {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  /* Background gradient for hero section */
+  background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%);
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(138, 43, 226, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(0, 115, 230, 0.1) 0%, transparent 50%);
+}
+.heroContent {
+  max-width: 1920px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 4%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+.heroLeft {
+  flex: 1;
+  max-width: 600px;
+}
+.heroTitle {
+  font-size: clamp(4rem, 8vw, 8rem);
+  font-weight: 300;
+  letter-spacing: 8px;
+  margin-bottom: 24px;
+  text-transform: uppercase;
+  line-height: 0.9;
+  background: linear-gradient(45deg, #ffd700, #ff8c00, #ff6b6b);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: titleGlow 4s ease-in-out infinite alternate;
+}
+@keyframes titleGlow {
+  from {
+    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.3));
+  }
+  to {
+    filter: drop-shadow(0 0 40px rgba(255, 215, 0, 0.6));
+  }
+}
+.heroSubtitle {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 40px;
+  line-height: 1.6;
+  font-weight: 300;
+}
+.heroCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--accent-blue);
+  color: #fff;
+  padding: 16px 32px;
+  border-radius: 50px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 16px;
+  box-shadow: 0 8px 32px rgba(0, 115, 230, 0.3);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.heroCta:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 48px rgba(0, 115, 230, 0.4);
+  background: #0056b3;
+}
+.heroRight {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+.heroCharacter {
+  width: 500px;
+  height: 500px;
+  position: relative;
+  /* Optionally add float animation: e.g., animation: float 6s ease-in-out infinite; */
+}
+.characterBase {
+  width: 100%;
+  height: 100%;
+  background: url('data:image/svg+xml,...') center/contain no-repeat;
+  /* (For brevity, the full SVG data from the HTML is omitted) */
+}
+.floatingBooks {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.floatingBook {
+  position: absolute;
+  width: 40px;
+  height: 60px;
+  background: var(--accent-gold);
+  /* The positions and animation delays for each floatingBook can be set via nth-child in CSS */
+}

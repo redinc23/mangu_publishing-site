@@ -1,0 +1,43 @@
+/* Reset and base element styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --netflix-black: #141414;
+  --netflix-dark: #181818;
+  --netflix-red: #e50914;
+  --netflix-white: #ffffff;
+  --netflix-gray: #b3b3b3;
+  --netflix-light-gray: #f5f5f1;
+  --accent-blue: #0073e6;
+  --accent-gold: #ffd700;
+  --accent-purple: #8a2be2;
+  --accent-coral: #ff6b6b;
+  --accent-teal: #4ecdc4;
+}
+
+body {
+  font-family: 'Netflix Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background: var(--netflix-black);
+  color: var(--netflix-white);
+  line-height: 1.4;
+  overflow-x: hidden;
+}
+
+/* Custom Scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--netflix-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--netflix-gray);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--netflix-white);
+}

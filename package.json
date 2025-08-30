@@ -1,0 +1,22 @@
+{
+  "name": "mangu2-publishing",
+  "version": "1.0.0",
+  "description": "MANGU PUBLISHING - Stream Unlimited Books",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"yarn workspace server dev\" \"yarn workspace client dev\"",
+    "build": "yarn workspace client build",
+    "start": "yarn workspace server start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}

@@ -1,0 +1,39 @@
+.contentSection {
+  padding: 20px 4%;
+}
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.sectionTitle {
+  font-size: 24px;
+  font-weight: 700;
+}
+.viewAll {
+  color: var(--netflix-gray);
+  text-decoration: none;
+  font-size: 14px;
+}
+.viewAll:hover {
+  color: var(--netflix-white);
+}
+.booksContainer {
+  overflow-x: auto;
+}
+.booksRow {
+  display: flex;
+  gap: 16px;
+  /* Enable horizontal scrolling */
+  overflow-x: scroll;
+  scroll-behavior: smooth;
+  padding-bottom: 8px;
+}
+.booksRow::-webkit-scrollbar {
+  height: 8px;
+}
+.booksRow::-webkit-scrollbar-thumb {
+  background: var(--netflix-gray);
+  border-radius: 4px;
+}
