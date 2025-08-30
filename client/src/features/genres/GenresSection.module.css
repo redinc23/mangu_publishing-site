@@ -1,0 +1,54 @@
+.genresSection {
+  padding: 20px 4%;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.sectionTitle {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.viewAll {
+  color: var(--netflix-gray);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.viewAll:hover {
+  color: var(--netflix-white);
+}
+
+.genresGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.genreCard {
+  display: block;
+  text-decoration: none;
+  background: linear-gradient(135deg, var(--netflix-dark), #2c2c2c);
+  border: 2px solid #333;
+  border-radius: 6px;
+  padding: 20px;
+  text-align: center;
+  transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+
+.genreCard:hover {
+  transform: scale(1.05);
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 12px rgba(0, 115, 230, 0.6);
+}
+
+.genreName {
+  color: var(--netflix-white);
+  font-size: 16px;
+  font-weight: 600;
+}

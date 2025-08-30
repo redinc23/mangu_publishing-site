@@ -1,0 +1,17 @@
+.contentSection {
+  padding: 20px 4%;
+}
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.sectionTitle {
+  font-size: 24px;
+  font-weight: 700;
+}
+.placeholder {
+  color: var(--netflix-gray);
+  font-style: italic;
+}
