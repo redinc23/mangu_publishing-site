@@ -12,6 +12,7 @@ import SearchResultsPage from './features/search/SearchResultsPage';
 // Add these new imports for the Admin section
 import AdminLayout from './features/admin/AdminLayout';
 import AdminBooksPage from './features/admin/AdminBooksPage';
+import AdminBookNewPage from './features/admin/AdminBookNewPage';
 
 const App = () => {
   return (
@@ -31,6 +32,7 @@ const App = () => {
         {/* Admin Routes - Nested under a common layout */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route path="books" element={<AdminBooksPage />} />
+           <Route path="books/new" element={<AdminBookNewPage />} />
           {/* We'll add more admin routes like `authors` later */}
         </Route>
         
