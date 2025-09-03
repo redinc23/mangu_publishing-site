@@ -13,7 +13,7 @@ const LibraryPage = () => {
         <ul>
           {libraryItems.map(book => (
             <li key={book.id}>
-              <strong>{item.title}</strong> by {item.author}
+              <strong>{book.title}</strong> by {book.author}
             </li>
           ))}
         </ul>

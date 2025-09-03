@@ -141,3 +141,81 @@
   font-size: 14px;
   color: #fff;
 }
+.authButtons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.loginButton {
+  background: none;
+  border: 1px solid var(--netflix-white);
+  color: var(--netflix-white);
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.loginButton:hover {
+  background: var(--netflix-white);
+  color: var(--netflix-black);
+}
+
+.signupButton {
+  background: var(--accent-blue);
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.signupButton:hover {
+  background: #0056b3;
+}
+
+.userMenu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--netflix-dark);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  min-width: 200px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  margin-top: 8px;
+}
+
+.userMenu a {
+  display: block;
+  color: var(--netflix-white);
+  text-decoration: none;
+  padding: 12px 16px;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.userMenu a:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.signOutButton {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--netflix-white);
+  padding: 12px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.signOutButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
