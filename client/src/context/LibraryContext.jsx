@@ -6,7 +6,7 @@ export const LibraryProvider = ({ children }) => {
   const [libraryItems, setLibraryItems] = useState([]);
 
   useEffect(() => {
-    fetch('/api/library')
+    fetch('http://localhost:5000/api/library')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -17,7 +17,7 @@ export const LibraryProvider = ({ children }) => {
   }, []);
 
   const addToLibrary = (bookId) => {
-    fetch('/api/library/add', {
+    fetch('http://localhost:5000/api/library/add', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ bookId })

@@ -1,86 +1,61 @@
-// client/src/App.jsx
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
+import './App.css';
 
-import Header from './features/header/Header';
-import Footer from './features/header/Footer';
+// Layout
+import Layout from './components/layout/Layout';
 
-import HomePage from './features/home/HomePage';
-import LibraryPage from './features/library/LibraryPage';
-import CartPage from './features/cart/CartPage';
-import BookDetailsPage from './features/books/BookDetailsPage';
-import AuthorPage from './features/authors/AuthorPage';
-import GenresPage from './features/genres/GenresPage';
-import SearchResultsPage from './features/search/SearchResultsPage';
+// Pages
+import HomePage from './pages/HomePage';
+import LibraryPage from './pages/LibraryPage';
+import BookDetailsPage from './pages/BookDetailsPage';
+import ProfilePage from './pages/ProfilePage';
+import SignInPage from './pages/SignInPage';
+import CartPage from './pages/CartPage';
+import AdminPage from './pages/AdminPage';
+import NotFoundPage from './pages/NotFoundPage';
 
-// Admin
-import AdminLayout from './features/admin/AdminLayout';
-import AdminBooksPage from './features/admin/AdminBooksPage';
-import AdminBookNewPage from './features/admin/AdminBookNewPage';
-
-// Auth bits
-import UserStatus from './components/UserStatus';
-import ProtectedRoute from './components/ProtectedRoute';
-
-const App = () => {
+// Main App component with routing
+function App() {
   return (
-    <>
-      {/* Global Header */}
-      <Header />
+    <Routes>
+      {/* Public routes with layout */}
+      <Route path="/" element={<Layout />}>
+        <Route index element={<HomePage />} />
+        <Route path="library" element={<LibraryPage />} />
+        <Route path="audiobooks" element={<LibraryPage />} />
+        <Route path="videos" element={<LibraryPage />} />
+        <Route path="magazines" element={<LibraryPage />} />
+        <Route path="podcasts" element={<LibraryPage />} />
+        <Route path="documentaries" element={<LibraryPage />} />
+        <Route path="book/:id" element={<BookDetailsPage />} />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="cart" element={<CartPage />} />
+        <Route path="bookmarks" element={<ProfilePage />} />
+        <Route path="history" element={<ProfilePage />} />
+        <Route path="recommendations" element={<ProfilePage />} />
+        <Route path="gift-cards" element={<ProfilePage />} />
+        <Route path="about" element={<NotFoundPage />} />
+        <Route path="careers" element={<NotFoundPage />} />
+        <Route path="press" element={<NotFoundPage />} />
+        <Route path="blog" element={<NotFoundPage />} />
+        <Route path="contact" element={<NotFoundPage />} />
+        <Route path="help" element={<NotFoundPage />} />
+        <Route path="accessibility" element={<NotFoundPage />} />
+        <Route path="devices" element={<NotFoundPage />} />
+        <Route path="terms" element={<NotFoundPage />} />
+        <Route path="privacy" element={<NotFoundPage />} />
+        <Route path="admin" element={<AdminPage />} />
+      </Route>
 
-      {/* Signed-in status (tiny bar) */}
-      <div style={{ padding: '8px 12px', fontSize: 14 }}>
-        <UserStatus />
-      </div>
+      {/* Auth routes without layout */}
+      <Route path="signin" element={<SignInPage />} />
+      <Route path="signup" element={<SignInPage />} />
 
-      {/* Routes */}
-      <Routes>
-        {/* Public */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/book/:id" element={<BookDetailsPage />} />
-        <Route path="/author/:id" element={<AuthorPage />} />
-        <Route path="/genres" element={<GenresPage />} />
-        <Route path="/search" element={<SearchResultsPage />} />
-
-        {/* Protected (wrap element with ProtectedRoute) */}
-        <Route
-          path="/library"
-          element={
-            <ProtectedRoute>
-              <LibraryPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/cart"
-          element={
-            <ProtectedRoute>
-              <CartPage />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Admin: protect the parent once; children inherit protection */}
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <AdminLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="books" element={<AdminBooksPage />} />
-          <Route path="books/new" element={<AdminBookNewPage />} />
-        </Route>
-
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-
-      {/* Global Footer */}
-      <Footer />
-    </>
+      {/* 404 catch-all */}
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
   );
-};
+}
 
 export default App;

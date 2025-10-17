@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  postgres:
+    environment:
+      POSTGRES_DB: mangu_db_dev
+    ports:
+      - "5433:5432"
+
+  redis:
+    command: redis-server --appendonly yes --requirepass HtQory2wdk1X8M8YJuwjQ
+    ports:
+      - "6380:6379"
+
+  # Additional development services
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: mangu-postgres-test
+    environment:
+      POSTGRES_DB: mangu_db_test
+      POSTGRES_USER: mangu_user
+      POSTGRES_PASSWORD: MxiXcjyvHot7BjuMuwUlmbYLqmv79jlH
+    ports:
+      - "5434:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    networks:
+      - mangu-network
+    profiles: ["test"]

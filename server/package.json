@@ -1,30 +1,80 @@
 {
-  "name": "server",
-  "private": true,
+  "name": "mangu-server",
   "version": "1.0.0",
   "type": "module",
+  "main": "src/index.js",
+  "description": "MANGU Publishing - Backend API Server",
+  "keywords": [
+    "express",
+    "nodejs",
+    "api",
+    "publishing",
+    "books"
+  ],
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon --watch src --ext js --exec 'node --inspect=0.0.0.0:9229 src/index.js'",
+    "dev:debug": "nodemon --watch src --ext js --exec 'node --inspect-brk=0.0.0.0:9229 src/index.js'",
+    "test": "NODE_ENV=test vitest run",
+    "test:watch": "NODE_ENV=test vitest --watch",
+    "lint": "eslint src --ext .js --fix",
+    "lint:check": "eslint src --ext .js",
+    "migrate": "node src/database/migrate.js",
+    "migrate:rollback": "node src/database/rollback.js",
+    "seed": "node src/database/seed.js",
+    "seed:reset": "node src/database/reset.js",
+    "docs:generate": "swagger-jsdoc -d src/config/swagger.js src/routes/**/*.js -o docs/api/swagger.json",
+    "security:audit": "npm audit && (npm list --depth=0 --json | jq '.problems[]?' || true)",
+    "security:fix": "npm audit fix",
+    "clean": "rm -rf node_modules logs/*.log",
+    "prepare": "husky install || true",
+    "dev:nocache": "cross-env DISABLE_REDIS=1 nodemon --watch src --ext js --exec 'node --inspect=0.0.0.0:9229 src/index.js'"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.879.0",
-    "@aws-sdk/lib-dynamodb": "^3.879.0",
-    "aws-sdk": "^2.1692.0",
-    "bcryptjs": "^3.0.2",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.2",
     "express": "^4.18.2",
-    "express-rate-limit": "^8.0.1",
-    "express-validator": "^7.2.1",
-    "helmet": "^6.0.1",
-    "jose": "^6.1.0",
-    "morgan": "^1.10.0",
-    "multer": "^2.0.2",
-    "multer-s3": "^3.0.1",
-    "stripe": "^18.5.0"
+    "cors": "^2.8.5",
+    "helmet": "^7.0.0",
+    "express-rate-limit": "^6.10.0",
+    "express-validator": "^7.0.1",
+    "express-session": "^1.17.3",
+    "@aws-sdk/client-dynamodb": "^3.400.0",
+    "@aws-sdk/lib-dynamodb": "^3.400.0",
+    "@aws-sdk/client-s3": "^3.400.0",
+    "@aws-sdk/client-ses": "^3.400.0",
+    "aws-jwt-verify": "^4.0.0",
+    "pg": "^8.11.3",
+    "redis": "^4.6.8",
+    "stripe": "^13.1.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "winston": "^3.10.0",
+    "winston-daily-rotate-file": "^4.7.1",
+    "compression": "^1.7.4",
+    "multer": "^1.4.5-lts.1",
+    "sharp": "^0.32.5",
+    "uuid": "^9.0.0",
+    "dotenv": "^16.3.1",
+    "joi": "^17.9.2",
+    "morgan": "^1.10.0"
   },
   "devDependencies": {
-    "nodemon": "^2.0.22"
+    "nodemon": "^3.0.1",
+    "vitest": "^1.6.0",
+    "eslint": "^8.47.0",
+    "eslint-config-standard": "^17.1.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.0",
+    "husky": "^8.0.0",
+    "lint-staged": "^14.0.1"
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "git add"
+    ]
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   }
 }

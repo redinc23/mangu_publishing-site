@@ -6,6 +6,8 @@ import React, {
   useEffect,
   useCallback,
 } from 'react';
+import { Amplify } from 'aws-amplify';
+import amplifyConfig from '../amplify-config';
 
 import {
   signIn as amplifySignIn,
@@ -17,6 +19,33 @@ import {
   signInWithRedirect,
 } from 'aws-amplify/auth';
 import { Hub } from 'aws-amplify/utils';
+
+const requiredAmplifyEnvVars = [
+  'VITE_AWS_REGION',
+  'VITE_COGNITO_USER_POOL_ID',
+  'VITE_COGNITO_USER_POOL_CLIENT_ID',
+  'VITE_IDENTITY_POOL_ID'
+];
+
+const missingAmplifyEnv = requiredAmplifyEnvVars.filter(
+  (key) => !import.meta.env[key]
+);
+
+if (missingAmplifyEnv.length) {
+  console.warn(
+    '[amplify] Missing environment variables:',
+    missingAmplifyEnv.join(', ')
+  );
+}
+
+// after imports, before Amplify.configure
+// @ts-ignore
+if (!window.__AMPLIFY_CONFIGURED__) {
+  Amplify.configure(amplifyConfig);
+  // @ts-ignore
+  window.__AMPLIFY_CONFIGURED__ = true;
+}
+
 
 const AuthContext = createContext(null);
 export const useAuth = () => {

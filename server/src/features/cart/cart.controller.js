@@ -21,3 +21,20 @@ export function addToCart(req, res) {
   // Return the updated cart
   return res.json(cartItems);
 }
+
+export function removeFromCart(req, res) {
+  const { bookId } = req.body;
+  const id = typeof bookId === 'string' ? parseInt(bookId, 10) : bookId;
+
+  if (!Number.isFinite(id)) {
+    return res.status(400).json({ error: 'Invalid bookId' });
+  }
+
+  cartItems = cartItems.filter(item => item.id !== id);
+  return res.json(cartItems);
+}
+
+export function clearCart(req, res) {
+  cartItems = [];
+  return res.json(cartItems);
+}
