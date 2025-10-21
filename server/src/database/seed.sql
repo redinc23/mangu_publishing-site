@@ -25,10 +25,18 @@ WHERE (b.title = 'The Quantum Garden' AND a.name = 'Elena Vasquez')
    OR (b.title = 'The Algorithm Murder' AND a.name = 'Lisa Wang')
 ON CONFLICT DO NOTHING;
 
+-- Insert sample users first
+INSERT INTO users (cognito_sub, email, username, full_name, role, subscription_tier, email_verified, profile_completed)
+VALUES 
+    ('sample-user-1', 'user1@example.com', 'testuser1', 'Test User 1', 'user', 'free', true, true),
+    ('sample-user-2', 'user2@example.com', 'testuser2', 'Test User 2', 'user', 'premium', true, true),
+    ('sample-user-3', 'user3@example.com', 'testuser3', 'Test User 3', 'user', 'free', true, true)
+ON CONFLICT (email) DO NOTHING;
+
 -- Insert sample reviews
 INSERT INTO reviews (user_id, book_id, rating, title, content, is_verified_purchase, helpful_votes)
 SELECT 
-    gen_random_uuid(),
+    u.id,
     b.id,
     (RANDOM() * 5)::INTEGER + 1,
     'Great read!',
@@ -36,6 +44,7 @@ SELECT
     true,
     (RANDOM() * 50)::INTEGER
 FROM books b
+CROSS JOIN users u
 WHERE b.title IN ('The Quantum Garden', 'Digital Shadows', 'The Last Observatory')
 LIMIT 10;
 

@@ -5,13 +5,21 @@ A modern, scalable publishing platform built with React, Node.js, PostgreSQL, an
 ## 🚀 Quick Start
 
 ```bash
-# 1. Verify setup
+# 1. Set up local credentials (FIRST TIME ONLY)
+cp scripts/credentials/github.sh.example scripts/credentials/local.sh
+# Edit local.sh and add your real credentials
+
+# 2. Load credentials (REQUIRED for Git/deployment operations)
+source scripts/launch_credentials.sh
+# Or directly: source scripts/credentials/local.sh
+
+# 3. Verify setup
 ./test-setup.sh
 
-# 2. Start services
+# 4. Start services
 ./start-dev.sh
 
-# 3. Start development servers (in separate terminals)
+# 5. Start development servers (in separate terminals)
 cd client && npm run dev
 cd server && npm run dev
 ```
@@ -95,7 +103,29 @@ docker-compose build --no-cache
 - ✅ Security best practices
 - ✅ Production-ready deployment configs
 
-## 🔒 Security
+## 🔒 Security & Credentials
+
+### Credentials Management
+
+**IMPORTANT**: Before any Git operations or deployments, load your credentials:
+
+```bash
+# First time setup: Create your local credentials file
+cp scripts/credentials/github.sh.example scripts/credentials/local.sh
+# Edit local.sh with your real credentials (GitHub token, AWS keys, etc.)
+
+# Load credentials (do this in every new terminal session)
+source scripts/launch_credentials.sh
+# Or directly: source scripts/credentials/local.sh
+```
+
+**Files**:
+- `local.sh` - Your real secrets (gitignored, never committed)
+- `github.sh.example` - Template file (safe to commit)
+
+See `scripts/credentials/README.md` for full documentation.
+
+### Security Features
 
 - Environment variables for secrets
 - Rate limiting on API endpoints

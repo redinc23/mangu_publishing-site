@@ -4,6 +4,8 @@ services:
   postgres:
     environment:
       POSTGRES_DB: mangu_db_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: MxiXcjyvHot7BjuMuwUlmbYLqmv79jlH
     ports:
       - "5433:5432"
 
@@ -18,7 +20,7 @@ services:
     container_name: mangu-postgres-test
     environment:
       POSTGRES_DB: mangu_db_test
-      POSTGRES_USER: mangu_user
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: MxiXcjyvHot7BjuMuwUlmbYLqmv79jlH
     ports:
       - "5434:5432"

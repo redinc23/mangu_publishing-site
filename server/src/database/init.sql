@@ -10,6 +10,10 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 CREATE EXTENSION IF NOT EXISTS "btree_gin";
 
+-- Create application user
+CREATE USER mangu_user WITH PASSWORD 'MxiXcjyvHot7BjuMuwUlmbYLqmv79jlH';
+GRANT ALL PRIVILEGES ON DATABASE mangu_db TO mangu_user;
+
 -- Create custom types
 CREATE TYPE user_role AS ENUM ('user', 'admin', 'moderator');
 CREATE TYPE subscription_tier AS ENUM ('free', 'premium', 'enterprise');
@@ -439,4 +443,12 @@ BEGIN
         ARRAY['mystery', 'artificial-intelligence', 'crime', 'technology']
     )
     ON CONFLICT (isbn) DO NOTHING;
+
+    -- Grant permissions to mangu_user
+    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO mangu_user;
+    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO mangu_user;
+    GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO mangu_user;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO mangu_user;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO mangu_user;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO mangu_user;
 END $$;

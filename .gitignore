@@ -140,6 +140,14 @@ temp/
 *.p12
 *.pfx
 
+# Credentials system - NEVER COMMIT
+# Allow example files but ignore all real credential files
+!scripts/credentials/*.example
+scripts/credentials/*.sh
+scripts/credentials/*.env
+scripts/*.env
+*.secret
+
 # Database files
 *.db
 *.sqlite
@@ -175,3 +183,7 @@ typings/
 # End of https://www.toptal.com/developers/gitignore/api/node
 client/.env.local
 client/.env
+
+# temp push logs
+push_*log
+.tmp/

@@ -3,11 +3,11 @@ set -euo pipefail
 
 echo "==> creating safe scaffolding (skips existing files)..."
 
-# ---- env defaults (uses your real IDs) ----
+# ---- env defaults (REPLACE WITH YOUR VALUES) ----
 REGION="us-east-1"
-POOL_ID="us-east-1_p75auZSSK"
-APP_CLIENT_ID="3qdsa3peji38tmeua1ttj6ape0"
-DOMAIN="us-east-1p75auzssk.auth.us-east-1.amazoncognito.com"
+POOL_ID="us-east-1_XXXXXXXXX"
+APP_CLIENT_ID="your-app-client-id-here"
+DOMAIN="your-domain.auth.us-east-1.amazoncognito.com"
 REDIRECT="http://localhost:5173"
 API_BASE="http://localhost:5000/api"
 

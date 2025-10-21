@@ -1,0 +1,14 @@
+
+> mangu-server@1.0.0 test
+> NODE_ENV=test vitest run -t normalizeAuthors
+
+
+ RUN  v1.6.1 /Users/redinc23gmail.com/projects/mangu2-publishing/server
+
+ ↓ ../tests/server/books.normalization.test.js  (3 tests | 3 skipped)
+
+ Test Files  1 skipped (1)
+      Tests  3 skipped (3)
+   Start at  16:03:21
+   Duration  281ms (transform 31ms, setup 0ms, collect 98ms, tests 0ms, environment 0ms, prepare 49ms)
+
