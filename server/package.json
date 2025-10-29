@@ -13,8 +13,8 @@
   ],
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon --watch src --ext js --exec 'node --inspect=0.0.0.0:9229 src/index.js'",
-    "dev:debug": "nodemon --watch src --ext js --exec 'node --inspect-brk=0.0.0.0:9229 src/index.js'",
+    "dev": "npx nodemon --watch src --ext js --exec 'node --inspect=0.0.0.0:9229 src/index.js'",
+    "dev:debug": "npx nodemon --watch src --ext js --exec 'node --inspect-brk=0.0.0.0:9229 src/index.js'",
     "test": "NODE_ENV=test vitest run",
     "test:watch": "NODE_ENV=test vitest --watch",
     "lint": "eslint src --ext .js --fix",
@@ -28,7 +28,7 @@
     "security:fix": "npm audit fix",
     "clean": "rm -rf node_modules logs/*.log",
     "prepare": "husky install || true",
-    "dev:nocache": "cross-env DISABLE_REDIS=1 nodemon --watch src --ext js --exec 'node --inspect=0.0.0.0:9229 src/index.js'"
+    "dev:nocache": "cross-env DISABLE_REDIS=1 npx nodemon --watch src --ext js --exec 'node --inspect=0.0.0.0:9229 src/index.js'"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.919.0",
@@ -62,7 +62,7 @@
     "eslint-config-standard": "^17.1.0",
     "husky": "^8.0.0",
     "lint-staged": "^14.0.1",
-    "nodemon": "^3.0.1",
+    "nodemon": "^3.1.10",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.0",
     "vitest": "^1.6.0"
