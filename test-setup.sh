@@ -70,8 +70,6 @@ main() {
     run_test "Node.js installed" "command -v node" true
     run_test "npm installed" "command -v npm" true
     run_test "Git installed" "command -v git" true
-    run_test "Docker installed" "command -v docker"
-    run_test "Docker Compose installed" "command -v docker-compose"
     
     if command -v node >/dev/null 2>&1; then
         local node_version
@@ -97,7 +95,6 @@ main() {
     echo "⚙️  Configuration Files:"
     run_test "Client package.json exists" "test -f client/package.json" true
     run_test "Server package.json exists" "test -f server/package.json" true
-    run_test "Docker compose file exists" "test -f docker-compose.yml" true
     run_test "Server .env file exists" "test -f server/.env" true
     run_test "Client .env file exists" "test -f client/.env" true
     run_test "Database schema exists" "test -f server/src/database/init.sql"
@@ -121,28 +118,28 @@ main() {
     
     echo ""
     
-    # Docker services (if running)
-    echo "🐳 Docker Services:"
-    if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
-        run_test "Docker daemon running" "docker info"
-        run_test "Docker compose config valid" "docker-compose config"
-        
-        # Check if services are running
-        if docker-compose ps postgres | grep -q "Up"; then
-            run_test "PostgreSQL container running" "docker-compose ps postgres | grep -q Up"
-            run_test "PostgreSQL accepting connections" "docker-compose exec postgres pg_isready -U mangu_user"
+    # Database services (if running)
+    echo "💾 Database Services:"
+    if command -v psql >/dev/null 2>&1; then
+        run_test "PostgreSQL client installed" "command -v psql"
+        if psql -h localhost -U mangu_user -d mangu_db -c '\q' 2>/dev/null; then
+            run_test "PostgreSQL accepting connections" "psql -h localhost -U mangu_user -d mangu_db -c '\q'"
         else
-            log_warning "PostgreSQL container not running (start with: ./start-dev.sh)"
-        fi
-        
-        if docker-compose ps redis | grep -q "Up"; then
-            run_test "Redis container running" "docker-compose ps redis | grep -q Up"
-            run_test "Redis responding to ping" "docker-compose exec redis redis-cli ping"
-        else
-            log_warning "Redis container not running (start with: ./start-dev.sh)"
+            log_warning "PostgreSQL not accepting connections (ensure PostgreSQL is running)"
         fi
     else
-        log_warning "Docker not available - skipping Docker tests"
+        log_warning "PostgreSQL client not installed"
+    fi
+    
+    if command -v redis-cli >/dev/null 2>&1; then
+        run_test "Redis client installed" "command -v redis-cli"
+        if redis-cli ping >/dev/null 2>&1; then
+            run_test "Redis responding to ping" "redis-cli ping"
+        else
+            log_warning "Redis not responding (ensure Redis is running, or set DISABLE_REDIS=1)"
+        fi
+    else
+        log_warning "Redis client not installed"
     fi
     
     echo ""
@@ -210,9 +207,9 @@ main() {
         log_success "🎉 All tests passed! Your MANGU setup is perfect!"
         echo ""
         echo -e "${BLUE}🚀 Ready to start development:${NC}"
-        echo "   1. ./start-dev.sh    # Start databases"
-        echo "   2. cd client && npm run dev    # Start frontend"
-        echo "   3. cd server && npm run dev    # Start backend"
+        echo "   1. ./start-all.sh              # Start both client and server"
+        echo "   2. cd client && npm run dev    # Start frontend only"
+        echo "   3. cd server && npm run dev    # Start backend only"
         
     elif [ $((test_count - passed_count)) -le 3 ]; then
         log_warning "⚠️  Setup is mostly ready with minor issues"
@@ -235,9 +232,9 @@ main() {
     echo ""
     echo -e "${BLUE}📖 Useful commands:${NC}"
     echo "   Test again:       ./test-setup.sh"
-    echo "   Start services:   ./start-dev.sh"
-    echo "   View logs:        docker-compose logs -f"
-    echo "   Reset database:   docker-compose down -v"
+    echo "   Start all:        ./start-all.sh"
+    echo "   Start client:     ./start-client.sh"
+    echo "   Start server:     ./start-server.sh"
     echo "   Health check:     curl http://localhost:5000/api/health"
 }
 

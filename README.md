@@ -73,32 +73,13 @@ npm run seed              # Seed sample data
 npm run build
 ```
 
-## 🐳 Docker Commands
-
-```bash
-# Start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f [service]
-
-# Stop services
-docker-compose down
-
-# Reset database
-docker-compose down -v
-
-# Rebuild containers
-docker-compose build --no-cache
-```
-
 ## 📚 Features
 
 - ✅ Modern React frontend with responsive design
 - ✅ Express.js API with comprehensive endpoints
 - ✅ PostgreSQL database with full-text search
 - ✅ Redis caching for performance
-- ✅ Docker development environment
+- ✅ Simple development environment (no Docker required)
 - ✅ Comprehensive test suite
 - ✅ Security best practices
 - ✅ Production-ready deployment configs
@@ -159,9 +140,10 @@ lsof -ti:5173 | xargs kill -9
 
 **Database issues:**
 ```bash
-# Reset database
-docker-compose down -v
-docker-compose up -d postgres
+# Check PostgreSQL status
+psql -h localhost -U mangu_user -d mangu_db
+# Reset database tables if needed
+psql mangu_db < server/src/database/init.sql
 ```
 
 **Dependency issues:**
@@ -177,7 +159,7 @@ npm install
 mangu-publishing/
 ├── client/                 # React frontend
 ├── server/                 # Express.js backend
-├── infrastructure/         # Docker, K8s, Terraform
+├── infrastructure/         # K8s, Terraform
 ├── tests/                 # Test suites
 ├── docs/                  # Documentation
 └── scripts/               # Utility scripts
@@ -185,19 +167,16 @@ mangu-publishing/
 
 ## 🚀 Deployment
 
-### Development
-```bash
-docker-compose up -d
-```
-
 ### Production
 ```bash
-# Deploy to AWS
+# Deploy using Azure DevOps
+./setup-azure-devops.sh
+
+# Or deploy to AWS
 cd infrastructure/terraform
 terraform apply
 
-# Or deploy to other platforms
-# See docs/deployment/ for guides
+# See docs/deployment/ for other platform guides
 ```
 
 ## 🤝 Contributing
