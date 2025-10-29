@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 echo "Starting MANGU Development Environment..."
 
+# Get the project root directory
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Start server in background
 echo "Starting server..."
-cd server && npm run dev &
+cd "$PROJECT_ROOT/server" && npm run dev &
 SERVER_PID=$!
 
 # Wait a moment for server to start
@@ -11,7 +14,7 @@ sleep 3
 
 # Start client
 echo "Starting client..."
-cd ../client && npm run dev &
+cd "$PROJECT_ROOT/client" && npm run dev &
 CLIENT_PID=$!
 
 echo ""
