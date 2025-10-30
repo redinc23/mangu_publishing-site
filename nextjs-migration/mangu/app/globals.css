@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Consistent Color Variables */
+:root {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #121212;
+  --bg-tertiary: #1a1a1a;
+  --text-primary: #ffffff;
+  --text-secondary: #b8b8b8;
+  --text-muted: #6b6b6b;
+  --accent-orange: #ff7700;
+  --accent-blue: #3b82f6;
+  --accent-green: #059669;
+  --gradient-primary: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #059669 100%);
+  --gradient-magical: linear-gradient(135deg, #6d28d9 0%, #3b82f6 50%, #d4af37 100%);
+}
+
+/* Consistent Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: perspective(1000px) rotateX(15deg) rotateY(-5deg) translateY(0);
+  }
+  50% {
+    transform: perspective(1000px) rotateX(18deg) rotateY(-8deg) translateY(-20px);
+  }
+}
+
+/* Hide scrollbar for carousels */
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .animate-fadeInScale {
+    animation: fadeInScale 1s ease-out forwards;
+  }
+}
+
+/* Consistent base styles */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
