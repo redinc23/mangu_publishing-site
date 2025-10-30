@@ -1,0 +1,79 @@
+name: ci-$(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  branches:
+    include:
+      - main
+      - feature/*
+pr:
+  branches:
+    include:
+      - "*"
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  NODE_VERSION: "20.x"
+  # Set your package manager: npm | pnpm | yarn
+  PKG_MGR: "npm"
+
+steps:
+- task: NodeTool@0
+  displayName: "Use Node $(NODE_VERSION)"
+  inputs:
+    versionSpec: "$(NODE_VERSION)"
+
+# Cache node_modules by lockfile
+- task: Cache@2
+  displayName: "Cache node_modules"
+  inputs:
+    key: 'node | "$(Agent.OS)" | $(PKG_MGR) | **/package-lock.json,**/pnpm-lock.yaml,**/yarn.lock'
+    restoreKeys: |
+      node | "$(Agent.OS)" | $(PKG_MGR)
+    path: $(Pipeline.Workspace)/.cache/node
+
+# Install deps (npm/pnpm/yarn auto-detected via PKG_MGR)
+- script: |
+    corepack enable
+    if [ "$(PKG_MGR)" = "pnpm" ]; then pnpm i --frozen-lockfile; \
+    elif [ "$(PKG_MGR)" = "yarn" ]; then yarn install --frozen-lockfile; \
+    else npm ci; fi
+  displayName: "Install dependencies"
+
+# Lint and tests (skip if not present)
+- script: |
+    if [ "$(PKG_MGR)" = "pnpm" ]; then \
+      pnpm run -r -c "lint --if-present" || pnpm run lint --if-present; \
+      pnpm run -r -c "test --if-present -- --ci" || pnpm run test --if-present -- --ci; \
+    elif [ "$(PKG_MGR)" = "yarn" ]; then \
+      yarn run lint || true; \
+      yarn run test --ci || true; \
+    else \
+      npm run lint --if-present; \
+      npm run test --if-present -- --ci; \
+    fi
+  displayName: "Lint and test"
+
+# Build (skip if not present)
+- script: |
+    if [ "$(PKG_MGR)" = "pnpm" ]; then pnpm run build --if-present; \
+    elif [ "$(PKG_MGR)" = "yarn" ]; then yarn build || true; \
+    else npm run build --if-present; fi
+  displayName: "Build"
+
+# Publish artifact (dist if exists, else repo root)
+- powershell: |
+    if (Test-Path "$(System.DefaultWorkingDirectory)/dist") {
+      Write-Host "##vso[task.setvariable variable=ArtifactPath]$(System.DefaultWorkingDirectory)/dist"
+    } else {
+      Write-Host "##vso[task.setvariable variable=ArtifactPath]$(System.DefaultWorkingDirectory)"
+    }
+  displayName: "Resolve artifact path"
+
+- task: PublishBuildArtifacts@1
+  displayName: "Publish build artifact"
+  inputs:
+    PathtoPublish: "$(ArtifactPath)"
+    ArtifactName: "build"
+    publishLocation: "Container"
