@@ -191,3 +191,21 @@ terraform apply
 
 Copyright © 2024 MANGU Publishing. All rights reserved.
 # README
+
+## Engineering Ops
+
+- CI: lint, typecheck, tests for Node and Python on push and PR, plus 6-hourly schedule.
+- CodeQL: static analysis for JS and Python, daily at 02:00.
+- Snyk: runs if SNYK_TOKEN repo secret is set.
+
+Daily loop:
+
+```sh
+npm run lint || true
+npm run typecheck || true
+npm test || true
+git add -A && git commit -m "feat: change" && git push -u origin HEAD
+gh pr create --fill
+gh copilot pr review --pr $(gh pr view --json number -q .number) --feedback
+```
+

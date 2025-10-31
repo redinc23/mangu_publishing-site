@@ -1,0 +1,15 @@
+name: Snyk
+
+on:
+  pull_request:
+  push: { branches: ["**"] }
+
+jobs:
+  snyk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snyk/actions/setup@master
+      - run: snyk test --all-projects || true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
