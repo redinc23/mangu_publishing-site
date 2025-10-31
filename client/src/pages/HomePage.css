@@ -355,14 +355,29 @@
   background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
 }
 
-.btn-buy {
-  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-  color: #000;
-  font-weight: 700;
+.btn-buy-subscribe {
+  background: var(--accent-orange);
+  color: white;
+  padding: 12px 24px;
+  border-radius: var(--border-radius);
+  border: none;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: var(--transition-base);
+  width: 100%;
+  max-width: 300px;
 }
 
-.btn-buy:hover {
-  background: linear-gradient(135deg, #ffc700 0%, #ffd700 100%);
+.btn-buy-subscribe:hover {
+  background: var(--accent-orange-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-orange);
+}
+
+.match-percent {
+  font-weight: 600;
+  color: var(--accent-orange);
 }
 
 .platform-links {
