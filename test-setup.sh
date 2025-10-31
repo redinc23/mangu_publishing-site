@@ -103,17 +103,19 @@ main() {
     
     # Dependencies
     echo "📦 Dependencies:"
-    run_test "Client node_modules exists" "test -d client/node_modules"
-    run_test "Server node_modules exists" "test -d server/node_modules"
+    # Yarn workspaces hoist to root, npm workspaces create local node_modules
+    run_test "Node modules installed" "test -d node_modules || test -d client/node_modules"
     
-    if [ -d "client/node_modules" ]; then
-        run_test "React installed" "test -d client/node_modules/react"
-        run_test "Vite installed" "test -d client/node_modules/vite"
+    if [ -d "client/node_modules" ] || [ -d "node_modules" ]; then
+        # Check in workspace root (Yarn workspaces hoist) or local node_modules
+        run_test "React installed" "test -d node_modules/react || test -d client/node_modules/react"
+        run_test "Vite installed" "test -d node_modules/vite || test -d client/node_modules/vite"
     fi
     
-    if [ -d "server/node_modules" ]; then
-        run_test "Express installed" "test -d server/node_modules/express"
-        run_test "PostgreSQL driver installed" "test -d server/node_modules/pg"
+    if [ -d "server/node_modules" ] || [ -d "node_modules" ]; then
+        # Check in workspace root (Yarn workspaces hoist) or local node_modules
+        run_test "Express installed" "test -d node_modules/express || test -d server/node_modules/express"
+        run_test "PostgreSQL driver installed" "test -d node_modules/pg || test -d server/node_modules/pg"
     fi
     
     echo ""
@@ -170,8 +172,7 @@ main() {
     
     # Security checks
     echo "🔒 Security Checks:"
-    run_test ".env files not in git" "! git ls-files | grep -q '\.env
-    "
+    run_test ".env files not in git" "! git ls-files | grep -q '\\.env$'"
     run_test "JWT secret is secure" "test \$(grep JWT_SECRET server/.env | cut -d= -f2 | wc -c) -gt 32"
     
     # Git repository
@@ -179,7 +180,7 @@ main() {
     echo "📊 Git Repository:"
     run_test "Git repository initialized" "test -d .git"
     if [ -d ".git" ]; then
-        run_test "Initial commit exists" "git log --oneline | wc -l | grep -q '^[1-9]'"
+        run_test "Initial commit exists" "test \$(git log --oneline 2>/dev/null | wc -l) -gt 0"
         run_test ".gitignore exists" "test -f .gitignore"
     fi
     

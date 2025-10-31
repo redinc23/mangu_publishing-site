@@ -1,0 +1,205 @@
+/* MANGU Publishing Unified Design System */
+/* Extracted from HTML files analysis */
+
+:root {
+  /* Primary Colors - Netflix-inspired dark theme */
+  --netflix-black: #141414;
+  --netflix-dark: #181818;
+  --netflix-red: #e50914;
+  --netflix-white: #ffffff;
+  --netflix-gray: #b3b3b3;
+  --netflix-light-gray: #f5f5f1;
+
+  /* Accent Colors */
+  --accent-orange: #ff7700;
+  --accent-orange-dark: #cc5500;
+  --accent-blue: #0073e6;
+  --accent-gold: #ffd700;
+  --accent-purple: #8a2be2;
+  --accent-coral: #ff6b6b;
+  --accent-teal: #4ecdc4;
+
+  /* Status Colors */
+  --success-green: #46d369;
+  --warning-orange: #ffa500;
+  --danger-red: #e50914;
+
+  /* Overlays & Effects */
+  --modal-overlay: rgba(0,0,0,0.85);
+  --glass-overlay: rgba(255,255,255,0.1);
+
+  /* Transitions */
+  --transition-base: all 0.3s ease;
+  --transition-fast: all 0.15s ease;
+  --transition-slow: all 0.5s ease;
+  --transition-master: all 1.2s cubic-bezier(0.19, 1, 0.22, 1);
+
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+  --shadow-xl: 0 20px 25px rgba(0,0,0,0.1);
+  --shadow-orange: 0 16px 48px rgba(255,119,0,.4);
+
+  /* Border Radius */
+  --border-radius: 8px;
+  --border-radius-sm: 6px;
+  --border-radius-lg: 12px;
+  --border-radius-xl: 16px;
+  --border-radius-pill: 9999px;
+
+  /* Layout */
+  --max-width: 1920px;
+  --header-height: 70px;
+  --container-padding: 4%;
+
+  /* Z-Index Scale */
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1020;
+  --z-index-fixed: 1030;
+  --z-index-modal: 1040;
+  --z-index-popover: 1050;
+  --z-index-tooltip: 1060;
+
+  /* Typography */
+  --font-primary: 'Netflix Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-serif: 'Cormorant Garamond', serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+}
+
+/* Light Mode Support */
+[data-theme="light"] {
+  --netflix-black: #f5f5f1;
+  --netflix-dark: #e6e6e6;
+  --netflix-white: #141414;
+  --netflix-gray: #6e6e6e;
+  --netflix-light-gray: #181818;
+  --modal-overlay: rgba(245,245,241,0.95);
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--netflix-dark);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--netflix-gray);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-orange);
+}
+
+/* Focus Styles for Accessibility */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent-orange);
+  outline-offset: 2px;
+}
+
+/* Common Button Styles */
+.btn-primary {
+  background: var(--accent-orange);
+  color: var(--netflix-white);
+  padding: 12px 24px;
+  border-radius: var(--border-radius-pill);
+  border: none;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: var(--transition-base);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary:hover {
+  background: var(--accent-orange-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-orange);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--netflix-white);
+  padding: 12px 24px;
+  border-radius: var(--border-radius-pill);
+  border: 2px solid var(--accent-orange);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+
+.btn-secondary:hover {
+  background: var(--accent-orange);
+  color: var(--netflix-white);
+}
+
+/* Card Styles */
+.card {
+  background: var(--netflix-dark);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: var(--transition-base);
+}
+
+.card:hover {
+  border-color: var(--accent-orange);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Container */
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--container-padding);
+}
+
+/* Utility Classes */
+.text-center {
+  text-align: center;
+}
+
+.text-orange {
+  color: var(--accent-orange);
+}
+
+.bg-dark {
+  background-color: var(--netflix-black);
+}
+
+.bg-darker {
+  background-color: var(--netflix-dark);
+}
+
+
