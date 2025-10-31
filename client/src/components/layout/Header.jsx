@@ -17,34 +17,30 @@ function Header() {
     <header className="header" id="header">
       <div className="header-content">
         <Link to="/" className="logo">
-          <div className="logo-icon"></div>
-          <span>MANGU</span>
+          <div className="logo-icon">
+            <span className="logo-m">M</span>
+          </div>
+          <span>LANGU</span>
         </Link>
 
         <nav className="nav-main">
           <Link
-            to="/"
-            className={isActive('/') ? 'active' : ''}
-          >
-            <i className="fas fa-home"></i> Home
-          </Link>
-          <Link
             to="/library"
-            className={isActive('/library') ? 'active' : ''}
+            className={`nav-button ${isActive('/library') ? 'active' : ''}`}
           >
-            <i className="fas fa-book"></i> Books
+            Library
           </Link>
           <Link
             to="/audiobooks"
-            className={isActive('/audiobooks') ? 'active' : ''}
+            className={`nav-button ${isActive('/audiobooks') ? 'active' : ''}`}
           >
-            <i className="fas fa-headphones"></i> Audiobooks
+            Audio
           </Link>
           <Link
-            to="/videos"
-            className={isActive('/videos') ? 'active' : ''}
+            to="/blog"
+            className={`nav-button ${isActive('/blog') ? 'active' : ''}`}
           >
-            <i className="fas fa-video"></i> Videos
+            News
           </Link>
         </nav>
 
@@ -62,18 +58,17 @@ function Header() {
             </form>
           </div>
 
-          <button className="header-icon">
-            <i className="fas fa-bell"></i>
-            <span className="notification-badge">3</span>
+          <button className="header-icon" title="Country">
+            <i className="fas fa-flag"></i>
+            <span className="country-code">US</span>
           </button>
 
-          <Link to="/cart" className="header-icon">
-            <i className="fas fa-shopping-cart"></i>
+          <Link to="/cart" className="header-icon" title="Cart">
+            <i className="fas fa-shopping-bag"></i>
           </Link>
 
-          <Link to="/profile" className="profile-menu">
-            <div className="profile-avatar">JS</div>
-            <i className="fas fa-caret-down"></i>
+          <Link to="/profile" className="header-icon" title="Profile">
+            <i className="fas fa-user-circle"></i>
           </Link>
         </div>
       </div>

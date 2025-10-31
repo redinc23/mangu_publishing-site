@@ -13,7 +13,10 @@ import ProfilePage from './pages/ProfilePage';
 import SignInPage from './pages/SignInPage';
 import CartPage from './pages/CartPage';
 import AdminPage from './pages/AdminPage';
+import AboutPage from './pages/AboutPage';
 import NotFoundPage from './pages/NotFoundPage';
+import BlogHubPage from './pages/BlogHubPage';
+import EventsHubPage from './pages/EventsHubPage';
 
 // Main App component with routing
 function App() {
@@ -35,10 +38,11 @@ function App() {
         <Route path="history" element={<ProfilePage />} />
         <Route path="recommendations" element={<ProfilePage />} />
         <Route path="gift-cards" element={<ProfilePage />} />
-        <Route path="about" element={<NotFoundPage />} />
+        <Route path="about" element={<AboutPage />} />
         <Route path="careers" element={<NotFoundPage />} />
         <Route path="press" element={<NotFoundPage />} />
-        <Route path="blog" element={<NotFoundPage />} />
+        <Route path="blog" element={<BlogHubPage />} />
+        <Route path="events" element={<EventsHubPage />} />
         <Route path="contact" element={<NotFoundPage />} />
         <Route path="help" element={<NotFoundPage />} />
         <Route path="accessibility" element={<NotFoundPage />} />

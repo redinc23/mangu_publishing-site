@@ -25,9 +25,9 @@ function HomePage() {
     const fetchData = async () => {
       try {
         const [featuredRes, trendingRes, releasesRes] = await Promise.all([
-          fetch('http://localhost:5000/api/books/featured'),
-          fetch('http://localhost:5000/api/books/trending'),
-          fetch('http://localhost:5000/api/books/new-releases')
+          fetch('http://localhost:3001/api/books/featured'),
+          fetch('http://localhost:3001/api/books/trending'),
+          fetch('http://localhost:3001/api/books?limit=20')
         ]);
 
         const featured = await featuredRes.json();
@@ -183,42 +183,16 @@ function HomePage() {
                 </p>
                 <div className="action-buttons">
                   <button
-                    className="btn btn-read"
-                    onClick={() => navigate(`/book/${featuredBook.id}`)}
-                  >
-                    <i className="fas fa-book"></i> Read Now
-                  </button>
-                  <button className="btn btn-watch">
-                    <i className="fas fa-headphones"></i> Listen
-                  </button>
-                  <button
-                    className="btn btn-library"
-                    onClick={() => handleAddToLibrary(featuredBook.id)}
-                  >
-                    <i className="fas fa-plus"></i> Add to Library
-                  </button>
-                  <button
-                    className="btn btn-buy"
+                    className="btn btn-buy-subscribe"
                     onClick={() => handleAddToCart(featuredBook.id)}
                   >
-                    <i className="fas fa-shopping-cart"></i> Buy ${(featuredBook.price_cents / 100).toFixed(2)}
+                    Buy Now or Subscribe
                   </button>
                 </div>
                 <div className="platform-links">
                   <button className="platform-btn apple">Apple Books</button>
-                  <button className="platform-btn google">Google Play</button>
-                  <button className="platform-btn amazon">Amazon</button>
-                </div>
-                <div className="info-icons">
-                  <div className="info-icon">
-                    <i className="fas fa-share-alt"></i>
-                  </div>
-                  <div className="info-icon">
-                    <i className="fas fa-download"></i>
-                  </div>
-                  <div className="info-icon">
-                    <i className="fas fa-flag"></i>
-                  </div>
+                  <button className="platform-btn apple">Apple Books</button>
+                  <button className="platform-btn apple">Apple Books</button>
                 </div>
               </div>
               <div className="tv-section">
@@ -247,7 +221,7 @@ function HomePage() {
         </div>
       </section>
 
-      {/* Trending Section */}
+      {/* Trending Section - First Row */}
       <section className="trending-section">
         <div className="trending-header">
           <h2 className="trending-title">Trending Now</h2>
@@ -271,7 +245,7 @@ function HomePage() {
                   onClick={() => navigate(`/book/${book.id}`)}
                   style={{ cursor: 'pointer' }}
                 >
-                  {book.is_new_release && <span className="new-badge">New</span>}
+                  {book.is_new_release && <span className="new-badge">NEW</span>}
                   <img
                     src={book.cover_url || 'https://images.unsplash.com/photo-1541963463532-d68292c34b19?auto=format&fit=crop&w=200&h=300&q=80'}
                     alt={book.title}
@@ -279,34 +253,9 @@ function HomePage() {
                   <div className="book-info">
                     <h3 className="book-title">{book.title}</h3>
                     <div className="book-metadata">
-                      <span>{book.authors?.map(a => a.name).join(', ') || 'Unknown'}</span>
+                      <span className="match-percent">% Match {new Date(book.publication_date).getFullYear()}</span>
                       <span>•</span>
-                      <span>{new Date(book.publication_date).getFullYear()}</span>
-                    </div>
-                    <div className="book-genres">
-                      {book.categories?.slice(0, 2).map((cat, idx) => (
-                        <span key={idx} className="genre">{cat}</span>
-                      ))}
-                    </div>
-                    <div className="book-buttons">
-                      <div
-                        className="icon-button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/book/${book.id}`);
-                        }}
-                      >
-                        <i className="fas fa-play"></i>
-                      </div>
-                      <div
-                        className="icon-button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddToLibrary(book.id);
-                        }}
-                      >
-                        <i className="fas fa-bookmark"></i>
-                      </div>
+                      <span>{book.page_count || 400} pages</span>
                     </div>
                   </div>
                 </div>
@@ -321,58 +270,52 @@ function HomePage() {
         </div>
       </section>
 
-      {/* New Releases Section */}
-      <section className="content-section">
-        <div className="section-header">
-          <h2 className="section-title">New Releases</h2>
-          <Link to="/library" className="view-all">
-            View All <i className="fas fa-chevron-right"></i>
+      {/* Trending Section - Second Row */}
+      <section className="trending-section">
+        <div className="trending-header">
+          <h2 className="trending-title">Trending Now</h2>
+          <Link to="/library" className="see-all">
+            See All <i className="fas fa-chevron-right"></i>
           </Link>
         </div>
 
-        <div className="books-container">
-          <div className="books-row">
+        <div className="carousel-container">
+          <button className="carousel-nav nav-prev" onClick={() => scrollCarousel('prev')}>
+            <i className="fas fa-chevron-left"></i>
+          </button>
+          <div className="carousel-track">
             {loading ? (
               <div className="loading-spinner">Loading...</div>
             ) : newReleases.length > 0 ? (
               newReleases.map((book) => (
-                <div className="book-card" key={book.id}>
+                <div
+                  className="book-card"
+                  key={book.id}
+                  onClick={() => navigate(`/book/${book.id}`)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {book.is_new_release && <span className="new-badge">NEW</span>}
                   <img
-                    src={book.cover_url || `https://images.unsplash.com/photo-1515125520141-3e3b67bc0a88?auto=format&fit=crop&w=120&h=180&q=80`}
+                    src={book.cover_url || 'https://images.unsplash.com/photo-1541963463532-d68292c34b19?auto=format&fit=crop&w=200&h=300&q=80'}
                     alt={book.title}
-                    onClick={() => navigate(`/book/${book.id}`)}
-                    style={{ cursor: 'pointer' }}
                   />
-                  <div className="book-overlay">
-                    <div className="book-actions">
-                      <div
-                        className="book-action"
-                        onClick={() => navigate(`/book/${book.id}`)}
-                      >
-                        <i className="fas fa-play"></i>
-                      </div>
-                      <div
-                        className="book-action"
-                        onClick={() => handleAddToLibrary(book.id)}
-                      >
-                        <i className="fas fa-plus"></i>
-                      </div>
-                    </div>
-                    <div className="book-info">
-                      <div className="book-title-small">{book.title}</div>
-                      <div className="book-author">{book.authors?.map(a => a.name).join(', ') || 'Unknown'}</div>
-                      <div className="book-rating">
-                        {'★'.repeat(Math.round(book.rating || 0))}
-                        {'☆'.repeat(5 - Math.round(book.rating || 0))}
-                      </div>
+                  <div className="book-info">
+                    <h3 className="book-title">{book.title}</h3>
+                    <div className="book-metadata">
+                      <span className="match-percent">% Match {new Date(book.publication_date).getFullYear()}</span>
+                      <span>•</span>
+                      <span>{book.page_count || 400} pages</span>
                     </div>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="no-data">No new releases available</div>
+              <div className="no-data">No trending books available</div>
             )}
           </div>
+          <button className="carousel-nav nav-next" onClick={() => scrollCarousel('next')}>
+            <i className="fas fa-chevron-right"></i>
+          </button>
         </div>
       </section>
 

@@ -176,46 +176,49 @@ a:focus-visible {
   opacity: 0.8;
 }
 
-.logo-icon::after {
-  content: '🔥';
+.logo-icon .logo-m {
   position: relative;
   z-index: 1;
-  font-size: 16px;
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--netflix-white);
+  font-family: 'Netflix Sans', sans-serif;
 }
 
-/* Navigation component */
+/* Navigation component - Pill-shaped buttons */
 .nav-main {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
   margin-left: 24px;
 }
 
-.nav-main a {
+.nav-button {
+  background: var(--accent-orange);
   color: var(--netflix-white);
   text-decoration: none;
-  font-weight: 400;
+  font-weight: 600;
   font-size: 14px;
+  padding: 8px 20px;
+  border-radius: 9999px;
   transition: var(--transition-base);
-  position: relative;
+  border: none;
+  display: inline-block;
+  white-space: nowrap;
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.nav-main a:hover,
-.nav-main a.active {
-  color: var(--netflix-gray);
+.nav-button:hover {
+  background: var(--accent-orange-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 119, 0, 0.4);
 }
 
-.nav-main a.active::after {
-  content: '';
-  position: absolute;
-  bottom: -24px;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--accent-orange);
+.nav-button.active {
+  background: var(--accent-orange-dark);
+  box-shadow: 0 2px 8px rgba(255, 119, 0, 0.3);
 }
 
 /* Header actions */
@@ -268,10 +271,22 @@ a:focus-visible {
   background: none;
   border: none;
   text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  border-radius: var(--border-radius);
 }
 
 .header-icon:hover {
-  color: var(--netflix-gray);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--accent-orange);
+}
+
+.country-code {
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 4px;
 }
 
 .notification-badge {
