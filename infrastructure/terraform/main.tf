@@ -172,11 +172,15 @@ resource "aws_security_group" "ecs_tasks" {
     security_groups = [aws_security_group.alb.id]
   }
 
-  ingress {
-    from_port       = 5173
-    to_port         = 5173
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
+  dynamic "ingress" {
+    for_each = var.environment == "development" ? [1] : []
+    content {
+      from_port       = 5173
+      to_port         = 5173
+      protocol        = "tcp"
+      security_groups = [aws_security_group.alb.id]
+      description     = "Vite dev server (development only)"
+    }
   }
 
   egress {

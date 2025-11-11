@@ -83,6 +83,21 @@ resource "aws_lb_listener" "http" {
   }
 }
 
+# ⚠️  PREREQUISITE: Create ACM certificate BEFORE running terraform apply
+#
+# Steps to create ACM certificate:
+# 1. Go to AWS Certificate Manager in your region
+# 2. Click "Request a certificate" > "Request a public certificate"
+# 3. Enter your domain name (e.g., mangu-publishing.com)
+# 4. Add alternate names if needed (e.g., *.mangu-publishing.com)
+# 5. Select DNS validation (recommended) or email validation
+# 6. Complete validation by adding DNS records to your domain
+# 7. Wait for status to become "Issued"
+# 8. Copy the certificate ARN and add to terraform.tfvars:
+#    certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/..."
+#
+# Without a valid certificate_arn, this HTTPS listener will fail to create!
+
 resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.main.arn
   port              = 443

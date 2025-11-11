@@ -36,11 +36,33 @@
 ### Manual Steps Required
 - [ ] Copy terraform.tfvars.example to terraform.tfvars
 - [ ] Fill in terraform.tfvars with actual values
-- [ ] Create ACM certificate for domain
-- [ ] Update certificate_arn in terraform.tfvars
+- [ ] **CRITICAL: Create ACM certificate BEFORE terraform apply**
+  - Go to AWS Certificate Manager
+  - Request public certificate for your domain
+  - Complete DNS validation (add CNAME records)
+  - Wait for "Issued" status
+  - Copy certificate ARN to terraform.tfvars
+  - **Without this, HTTPS listener will FAIL!**
 - [ ] Run `terraform init`
 - [ ] Run `terraform plan` and review
 - [ ] Run `terraform apply` to provision infrastructure
+- [ ] **After terraform apply: Populate app secrets**
+  ```bash
+  # JWT Secret
+  aws secretsmanager put-secret-value \
+    --secret-id mangu-publishing-jwt-secret-production \
+    --secret-string "$(openssl rand -base64 64)"
+  
+  # Stripe Keys
+  aws secretsmanager put-secret-value \
+    --secret-id mangu-publishing-stripe-keys-production \
+    --secret-string '{"secret_key":"sk_live_...","publishable_key":"pk_live_...","webhook_secret":"whsec_..."}'
+  
+  # Cognito Config
+  aws secretsmanager put-secret-value \
+    --secret-id mangu-publishing-cognito-config-production \
+    --secret-string '{"user_pool_id":"...","client_id":"...","region":"us-east-1"}'
+  ```
 
 ## Phase 3: Containerization ✅
 

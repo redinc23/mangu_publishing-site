@@ -1,3 +1,8 @@
+resource "random_password" "db_password" {
+  length  = 32
+  special = true
+}
+
 resource "aws_security_group" "rds" {
   name        = "${var.project_name}-rds-sg-${var.environment}"
   description = "Security group for RDS PostgreSQL"
@@ -98,7 +103,7 @@ resource "aws_db_instance" "main" {
 
   db_name  = var.db_name
   username = var.db_username
-  password = var.db_password
+  password = random_password.db_password.result
 
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.rds.id]
@@ -113,9 +118,9 @@ resource "aws_db_instance" "main" {
   performance_insights_enabled    = true
   performance_insights_retention_period = 7
 
-  deletion_protection = true
-  skip_final_snapshot = false
-  final_snapshot_identifier = "${var.project_name}-final-snapshot-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
+  deletion_protection = var.environment == "production" ? true : false
+  skip_final_snapshot = var.environment == "production" ? false : true
+  final_snapshot_identifier = var.environment == "production" ? "${var.project_name}-final-snapshot-${formatdate("YYYY-MM-DD-hhmm", timestamp())}" : null
 
   auto_minor_version_upgrade = true
   apply_immediately         = false
@@ -138,12 +143,12 @@ resource "aws_secretsmanager_secret_version" "db_credentials" {
   secret_id = aws_secretsmanager_secret.db_credentials.id
   secret_string = jsonencode({
     username = var.db_username
-    password = var.db_password
+    password = random_password.db_password.result
     engine   = "postgres"
     host     = aws_db_instance.main.address
     port     = aws_db_instance.main.port
     dbname   = var.db_name
-    url      = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.main.address}:${aws_db_instance.main.port}/${var.db_name}?sslmode=require"
+    url      = "postgresql://${var.db_username}:${random_password.db_password.result}@${aws_db_instance.main.address}:${aws_db_instance.main.port}/${var.db_name}?sslmode=require"
   })
 }
 

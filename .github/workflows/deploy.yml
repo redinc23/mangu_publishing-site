@@ -28,13 +28,13 @@ jobs:
         run: npm ci
 
       - name: Run linter
-        run: npm run lint || echo "Linting errors found"
+        run: npm run lint
 
       - name: Run type check
-        run: npm run typecheck || echo "Type checking skipped"
+        run: npm run typecheck
 
       - name: Run tests
-        run: npm test -- --ci || echo "Tests skipped"
+        run: npm test -- --ci
 
   build-and-deploy:
     needs: test
@@ -107,6 +107,14 @@ jobs:
         run: |
           docker push $ECR_REGISTRY/$ECR_CLIENT_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_CLIENT_REPOSITORY:latest
+
+      - name: Run database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          cd server
+          npm ci
+          npm run migrate
 
       - name: Deploy server to ECS
         run: |

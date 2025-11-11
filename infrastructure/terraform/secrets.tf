@@ -1,4 +1,25 @@
 # AWS Secrets Manager for secure credential storage
+#
+# ⚠️  MANUAL STEP REQUIRED AFTER TERRAFORM APPLY ⚠️
+#
+# These secrets are created empty. You must populate them before deploying:
+#
+# 1. JWT Secret:
+#    aws secretsmanager put-secret-value \
+#      --secret-id <project>-jwt-secret-<env> \
+#      --secret-string "$(openssl rand -base64 64)"
+#
+# 2. Stripe Keys:
+#    aws secretsmanager put-secret-value \
+#      --secret-id <project>-stripe-keys-<env> \
+#      --secret-string '{"secret_key":"sk_...","publishable_key":"pk_...","webhook_secret":"whsec_..."}'
+#
+# 3. Cognito Config:
+#    aws secretsmanager put-secret-value \
+#      --secret-id <project>-cognito-config-<env> \
+#      --secret-string '{"user_pool_id":"...","client_id":"...","region":"us-east-1"}'
+#
+# Database and Redis URLs are auto-populated by Terraform outputs.
 
 resource "aws_secretsmanager_secret" "database_url" {
   name        = "${var.project_name}-database-url-${var.environment}"
