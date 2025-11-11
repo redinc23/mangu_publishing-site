@@ -6,13 +6,19 @@ terraform {
       version = "~> 5.0"
     }
   }
-  backend "s3" {
-    bucket         = "mangu-terraform-state"
-    key            = "production/terraform.tfstate"
-    region         = "us-east-1"
-    encrypt        = true
-    dynamodb_table = "mangu-terraform-locks"
-  }
+  # Backend configuration - use local state for now
+  # To use S3 backend, first create bucket and DynamoDB table:
+  # aws s3 mb s3://mangu-terraform-state --region us-east-1
+  # aws dynamodb create-table --table-name mangu-terraform-locks --attribute-definitions AttributeName=LockID,AttributeType=S --key-schema AttributeName=LockID,KeyType=HASH --billing-mode PAY_PER_REQUEST --region us-east-1
+  # Then uncomment below:
+  #
+  # backend "s3" {
+  #   bucket         = "mangu-terraform-state"
+  #   key            = "production/terraform.tfstate"
+  #   region         = "us-east-1"
+  #   encrypt        = true
+  #   dynamodb_table = "mangu-terraform-locks"
+  # }
 }
 
 provider "aws" {
