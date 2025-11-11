@@ -1,0 +1,28 @@
+# AWS Configuration
+aws_region = "us-east-1"
+environment = "production"
+project_name = "mangu-publishing"
+
+# Network Configuration
+vpc_cidr = "10.0.0.0/16"
+
+# Database Configuration
+db_instance_class = "db.t3.small"
+db_allocated_storage = 50
+db_name = "mangu_production"
+db_username = "mangu_admin"
+db_password = "CHANGE_ME_SECURE_PASSWORD"
+
+# Redis Configuration
+redis_node_type = "cache.t3.micro"
+redis_num_cache_nodes = 2
+
+# ECS Configuration
+ecs_server_cpu = 512
+ecs_server_memory = 1024
+ecs_client_cpu = 256
+ecs_client_memory = 512
+
+# Domain Configuration
+domain_name = "mangu-publishing.com"
+certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT_ID:certificate/CERTIFICATE_ID"

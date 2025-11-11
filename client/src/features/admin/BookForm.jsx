@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import NotionAI from '../../components/NotionAI';
 import styles from './BookForm.module.css';
 
 const BookForm = () => {
@@ -158,6 +159,24 @@ const BookForm = () => {
             rows="4"
           />
         </div>
+
+        {/* Notion AI Integration */}
+        <NotionAI
+          book={{
+            title: formData.title,
+            authors: formData.author ? [formData.author] : [],
+            genre: formData.genre,
+            tags: []
+          }}
+          onContentGenerated={(type, content) => {
+            if (type === 'description' || type === 'summary') {
+              setFormData(prev => ({
+                ...prev,
+                description: content
+              }));
+            }
+          }}
+        />
 
         <div className={styles.formActions}>
           <button 

@@ -9,7 +9,13 @@
     "start": "yarn workspace mangu-server start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"No tests\" && exit 0"
+    "test": "echo \"No tests\" && exit 0",
+    "setup-notion": "node scripts/setup-notion.js",
+    "setup-notion-auto": "node scripts/auto-setup-notion.js",
+    "complete-notion": "node scripts/complete-notion-setup.js",
+    "get-database-id": "node scripts/get-database-id.js",
+    "verify-notion": "node scripts/verify-notion.js",
+    "setup-notion-complete": "bash scripts/setup-notion-complete.sh"
   },
   "keywords": [],
   "author": "",
@@ -21,5 +27,9 @@
   ],
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "@notionhq/client": "^5.4.0",
+    "dotenv": "^17.2.3"
   }
 }

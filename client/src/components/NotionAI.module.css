@@ -1,0 +1,133 @@
+.notion-ai-container {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  border: 1px solid #e0e0e0;
+}
+
+.notion-ai-header {
+  margin-bottom: 1.5rem;
+}
+
+.notion-ai-header h3 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+  font-size: 1.25rem;
+}
+
+.notion-ai-header p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.notion-ai-warning {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+  padding: 1rem;
+  color: #856404;
+}
+
+.notion-ai-warning h3 {
+  margin: 0 0 0.5rem 0;
+  color: #856404;
+}
+
+.notion-ai-error {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  color: #721c24;
+}
+
+.notion-ai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.notion-ai-button {
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.notion-ai-button:hover:not(:disabled) {
+  background: #0056b3;
+  transform: translateY(-1px);
+}
+
+.notion-ai-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.notion-ai-button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.notion-ai-button-sync {
+  background: #28a745;
+}
+
+.notion-ai-button-sync:hover:not(:disabled) {
+  background: #218838;
+}
+
+.notion-ai-result {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 1.25rem;
+  margin-top: 1rem;
+}
+
+.notion-ai-result h4 {
+  margin: 0 0 1rem 0;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.notion-ai-content {
+  color: #495057;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  margin-bottom: 1rem;
+}
+
+.notion-ai-link {
+  display: inline-block;
+  color: #007bff;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.notion-ai-link:hover {
+  color: #0056b3;
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .notion-ai-actions {
+    flex-direction: column;
+  }
+
+  .notion-ai-button {
+    width: 100%;
+  }
+}
+
+

@@ -1,8 +1,12 @@
 import app, { NODE_ENV, setDbPool, setRedisClient } from './app.js';
 import pg from 'pg';
 import { createClient as createRedisClient } from 'redis';
+import { validateEnv, requireValidEnv } from './config/env.js';
 
 const { Pool } = pg;
+
+// Validate environment variables on startup
+requireValidEnv();
 
 const PORT = process.env.PORT || 3001;
 

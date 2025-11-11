@@ -17,6 +17,15 @@ import AboutPage from './pages/AboutPage';
 import NotFoundPage from './pages/NotFoundPage';
 import BlogHubPage from './pages/BlogHubPage';
 import EventsHubPage from './pages/EventsHubPage';
+import AuthorsPage from './pages/AuthorsPage';
+import AuthorDetailPage from './pages/AuthorDetailPage';
+import BlogArticlePage from './pages/BlogArticlePage';
+import AuthorPortalDashboard from './pages/author/AuthorPortalDashboard';
+import AuthorProjectsPage from './pages/author/AuthorProjectsPage';
+import SeriesPage from './pages/SeriesPage';
+import GenresPage from './pages/GenresPage';
+import BookStorePage from './pages/BookStorePage';
+import NewsletterPage from './pages/NewsletterPage';
 
 // Main App component with routing
 function App() {
@@ -41,8 +50,21 @@ function App() {
         <Route path="about" element={<AboutPage />} />
         <Route path="careers" element={<NotFoundPage />} />
         <Route path="press" element={<NotFoundPage />} />
-        <Route path="blog" element={<BlogHubPage />} />
         <Route path="events" element={<EventsHubPage />} />
+        <Route path="events/:id" element={<EventDetailsPage />} />
+        <Route path="authors" element={<AuthorsPage />} />
+        <Route path="authors/:id" element={<AuthorDetailPage />} />
+        <Route path="blog" element={<BlogHubPage />} />
+        <Route path="blog/article/:id" element={<BlogArticlePage />} />
+        <Route path="author-portal" element={<AuthorPortalDashboard />} />
+        <Route path="author-portal/projects" element={<AuthorProjectsPage />} />
+        <Route path="author-portal/submit" element={<NotFoundPage />} />
+        <Route path="series" element={<SeriesPage />} />
+        <Route path="series/:id" element={<NotFoundPage />} />
+        <Route path="genres" element={<GenresPage />} />
+        <Route path="genres/:id" element={<NotFoundPage />} />
+        <Route path="store" element={<BookStorePage />} />
+        <Route path="newsletter" element={<NewsletterPage />} />
         <Route path="contact" element={<NotFoundPage />} />
         <Route path="help" element={<NotFoundPage />} />
         <Route path="accessibility" element={<NotFoundPage />} />

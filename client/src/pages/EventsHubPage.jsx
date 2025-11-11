@@ -3,268 +3,223 @@ import { Link } from 'react-router-dom';
 import './EventsHubPage.css';
 
 function EventsHubPage() {
-  const [statusFilter, setStatusFilter] = useState('upcoming');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-
-  // Sample events data
+  const [activeFilter, setActiveFilter] = useState('upcoming');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [events] = useState([
     {
       id: 1,
       title: 'Summer Reading Challenge 2025',
-      description: 'Join thousands of readers in our annual summer reading challenge! Read 10 books over the summer and unlock exclusive rewards.',
-      category: 'challenges',
-      date: 'June 1, 2025',
-      time: '9:00 AM',
-      attendees: 1234,
+      description: 'Join thousands of readers worldwide in our annual summer reading challenge.',
+      date: 'June 1 - Aug 31, 2025',
+      time: 'All Day Event',
+      category: 'challenge',
       status: 'upcoming',
+      attendees: 2847,
       featured: true
     },
     {
       id: 2,
-      title: 'Author Meet & Greet: Sarah Johnson',
-      description: 'Meet bestselling author Sarah Johnson and get your books signed. Discussion panel and Q&A session included.',
-      category: 'author-events',
-      date: 'June 15, 2025',
-      time: '2:00 PM',
-      attendees: 567,
-      status: 'upcoming'
+      title: 'Author Q&A: Sarah J. Maas',
+      description: 'Live virtual event with bestselling fantasy author Sarah J. Maas.',
+      date: 'July 15, 2025',
+      time: '7:00 PM EST',
+      category: 'author-event',
+      status: 'upcoming',
+      attendees: 1523
     },
     {
       id: 3,
-      title: 'Fantasy Book Club Meeting',
-      description: 'Monthly meeting of the Fantasy Lovers Club. This month we\'re discussing "The Shadow King" by Mark Williams.',
-      category: 'book-clubs',
-      date: 'June 8, 2025',
-      time: '7:00 PM',
-      attendees: 89,
-      status: 'upcoming'
+      title: 'Virtual Book Club: A Court of Thorns and Roses',
+      description: 'Monthly book club discussion for ACOTAR series fans.',
+      date: 'July 8, 2025',
+      time: '6:00 PM EST',
+      category: 'bookclub',
+      status: 'upcoming',
+      attendees: 456
     },
     {
       id: 4,
-      title: 'Writing Workshop: Character Development',
-      description: 'Learn advanced techniques for creating compelling characters in your stories. Led by award-winning author Dr. Emily Chen.',
-      category: 'workshops',
-      date: 'June 12, 2025',
-      time: '10:00 AM',
-      attendees: 234,
-      status: 'upcoming'
+      title: 'Romance Writers Workshop',
+      description: 'Learn from published romance authors about craft and industry.',
+      date: 'July 22, 2025',
+      time: '2:00 PM EST',
+      category: 'workshop',
+      status: 'upcoming',
+      attendees: 234
     },
     {
       id: 5,
-      title: 'Book Launch: "The Last Horizon"',
-      description: 'Celebrate the launch of the highly anticipated new novel by bestselling author Michael Torres.',
-      category: 'book-launches',
+      title: 'Fantasy Book Launch: The Last Kingdom',
+      description: 'Celebrate the release of the most anticipated fantasy novel of the year.',
       date: 'June 20, 2025',
-      time: '6:00 PM',
-      attendees: 890,
-      status: 'upcoming'
+      time: '8:00 PM EST',
+      category: 'launch',
+      status: 'past',
+      attendees: 892
     },
     {
       id: 6,
-      title: 'Silent Reading Night',
-      description: 'Join fellow book lovers for a peaceful evening of silent reading. Bring your favorite book and enjoy quiet camaraderie.',
-      category: 'reading-events',
+      title: 'Thriller Reading Marathon',
+      description: 'Non-stop thriller reading sessions with live commentary.',
       date: 'June 5, 2025',
-      time: '6:00 PM',
-      attendees: 456,
-      status: 'upcoming'
-    },
-    {
-      id: 7,
-      title: 'Book Club Discussion: "The Midnight Library"',
-      description: 'Join our discussion of this thought-provoking novel about life, choices, and second chances.',
-      category: 'book-clubs',
-      date: 'May 25, 2025',
-      time: '7:00 PM',
-      attendees: 123,
-      status: 'past'
+      time: '12:00 PM - 12:00 AM',
+      category: 'reading-event',
+      status: 'past',
+      attendees: 678
     }
   ]);
 
-  const featuredEvent = events.find(e => e.featured) || events[0];
-  const upcomingEvents = events.filter(e => e.status === 'upcoming').slice(0, 5);
+  const featuredEvent = events.find(event => event.featured) || events[0];
+  const upcomingEvents = events.filter(event => event.status === 'upcoming').slice(0, 3);
+
+  const categories = [
+    { id: 'all', label: 'All Events', icon: 'fa-calendar' },
+    { id: 'challenge', label: 'Challenges', icon: 'fa-trophy' },
+    { id: 'author-event', label: 'Author Events', icon: 'fa-user' },
+    { id: 'bookclub', label: 'Book Clubs', icon: 'fa-users' },
+    { id: 'workshop', label: 'Workshops', icon: 'fa-chalkboard-teacher' },
+    { id: 'launch', label: 'Book Launches', icon: 'fa-rocket' },
+    { id: 'reading-event', label: 'Reading Events', icon: 'fa-book-open' }
+  ];
+
+  const filters = [
+    { id: 'upcoming', label: 'Upcoming' },
+    { id: 'past', label: 'Past Events' },
+    { id: 'all', label: 'All' }
+  ];
+
+  const filteredEvents = events.filter(event => {
+    const statusMatch = activeFilter === 'all' || event.status === activeFilter;
+    const categoryMatch = selectedCategory === 'all' || event.category === selectedCategory;
+    return statusMatch && categoryMatch;
+  });
 
   const getCategoryColor = (category) => {
     const colors = {
-      'challenges': '#ff6b6b',
-      'author-events': '#4ecdc4',
-      'book-clubs': '#95e1d3',
-      'workshops': '#f38181',
-      'book-launches': '#fce38a',
-      'reading-events': '#aa96da'
+      challenge: '#4CAF50',
+      'author-event': '#6d4cff',
+      bookclub: '#FF9800',
+      workshop: '#2196F3',
+      launch: '#E91E63',
+      'reading-event': '#9C27B0'
     };
     return colors[category] || '#7e57c2';
   };
 
   const getCategoryLabel = (category) => {
-    const labels = {
-      'challenges': 'Challenge',
-      'author-events': 'Author Event',
-      'book-clubs': 'Book Club',
-      'workshops': 'Workshop',
-      'book-launches': 'Book Launch',
-      'reading-events': 'Reading Event'
-    };
-    return labels[category] || 'Event';
+    return categories.find(cat => cat.id === category)?.label || category;
   };
-
-  const filteredEvents = events.filter(event => {
-    const statusMatch = statusFilter === 'all' || event.status === statusFilter;
-    const categoryMatch = categoryFilter === 'all' || event.category === categoryFilter;
-    return statusMatch && categoryMatch;
-  });
 
   return (
     <div className="events-hub-page">
-      {/* Featured Event Section */}
-      <section className="featured-event-section">
-        <div 
-          className="featured-event-bg"
-          style={{
-            backgroundImage: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-          }}
-        ></div>
-        <div className="featured-event-overlay"></div>
+      {/* Featured Event */}
+      <section className="featured-event">
+        <div className="featured-overlay"></div>
         <div className="container">
-          <div className="featured-event-content">
-            <div className="featured-badge">
-              <i className="fas fa-star"></i> Featured Event
-            </div>
-            <h1 className="featured-event-title">{featuredEvent.title}</h1>
-            <p className="featured-event-description">{featuredEvent.description}</p>
-            <div className="featured-event-details">
-              <div className="featured-detail-item">
+          <div className="featured-content">
+            <span
+              className="event-badge"
+              style={{ backgroundColor: getCategoryColor(featuredEvent.category) }}
+            >
+              <i className="fas fa-star"></i> FEATURED EVENT
+            </span>
+            <h1 className="featured-title">{featuredEvent.title}</h1>
+            <p className="featured-description">{featuredEvent.description}</p>
+            <div className="featured-meta">
+              <div className="meta-item">
                 <i className="fas fa-calendar"></i>
                 <span>{featuredEvent.date}</span>
               </div>
-              <div className="featured-detail-item">
+              <div className="meta-item">
                 <i className="fas fa-clock"></i>
                 <span>{featuredEvent.time}</span>
               </div>
-              <div className="featured-detail-item">
+              <div className="meta-item">
                 <i className="fas fa-users"></i>
-                <span>{featuredEvent.attendees} attending</span>
+                <span>{featuredEvent.attendees} Attending</span>
               </div>
             </div>
-            <div className="featured-event-actions">
-              <button className="btn btn-primary btn-featured">
+            <div className="featured-actions">
+              <button className="btn btn-primary">
                 <i className="fas fa-calendar-check"></i> RSVP Now
               </button>
-              <Link to={`/events/${featuredEvent.id}`} className="btn btn-secondary btn-featured">
-                Learn More <i className="fas fa-arrow-right"></i>
+              <Link to={`/events/${featuredEvent.id}`} className="btn btn-secondary">
+                <i className="fas fa-info-circle"></i> Learn More
               </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Reading Challenge Banner */}
-      <section className="challenge-banner">
-        <div className="container">
+      {/* Main Content */}
+      <div className="container">
+        {/* Reading Challenge Banner */}
+        <section className="reading-challenge-banner">
           <div className="challenge-content">
             <div className="challenge-icon">
               <i className="fas fa-trophy"></i>
             </div>
-            <div className="challenge-text">
+            <div className="challenge-info">
               <h2>2025 Reading Challenge</h2>
-              <p>Join 50,000+ readers in our annual challenge</p>
-            </div>
-            <div className="challenge-stats">
-              <div className="stat-item">
-                <div className="stat-value">50K+</div>
-                <div className="stat-label">Participants</div>
+              <p>Set your reading goal and track your progress throughout the year!</p>
+              <div className="challenge-stats">
+                <div className="stat">
+                  <span className="stat-value">32</span>
+                  <span className="stat-label">Books Read</span>
+                </div>
+                <div className="stat">
+                  <span className="stat-value">50</span>
+                  <span className="stat-label">Goal</span>
+                </div>
+                <div className="stat">
+                  <span className="stat-value">64%</span>
+                  <span className="stat-label">Complete</span>
+                </div>
               </div>
-              <div className="stat-item">
-                <div className="stat-value">2.5M</div>
-                <div className="stat-label">Books Read</div>
-              </div>
-              <div className="stat-item">
-                <div className="stat-value">85%</div>
-                <div className="stat-label">Completion Rate</div>
+              <div className="progress-bar">
+                <div className="progress-fill" style={{ width: '64%' }}></div>
               </div>
             </div>
             <button className="btn btn-challenge">
-              Join Challenge <i className="fas fa-arrow-right"></i>
+              <i className="fas fa-eye"></i> View Challenge
             </button>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Main Content */}
-      <div className="container">
-        <div className="events-main-content">
+        <div className="main-content">
           {/* Events Feed */}
           <div className="events-feed">
-            {/* Filters */}
-            <div className="events-filters">
-              <div className="status-filters">
-                <button
-                  className={`status-filter ${statusFilter === 'all' ? 'active' : ''}`}
-                  onClick={() => setStatusFilter('all')}
-                >
-                  All Events
-                </button>
-                <button
-                  className={`status-filter ${statusFilter === 'upcoming' ? 'active' : ''}`}
-                  onClick={() => setStatusFilter('upcoming')}
-                >
-                  Upcoming
-                </button>
-                <button
-                  className={`status-filter ${statusFilter === 'past' ? 'active' : ''}`}
-                  onClick={() => setStatusFilter('past')}
-                >
-                  Past Events
-                </button>
-              </div>
-              <div className="category-filters">
-                <button
-                  className={`category-filter ${categoryFilter === 'all' ? 'active' : ''}`}
-                  onClick={() => setCategoryFilter('all')}
-                >
-                  All Categories
-                </button>
-                <button
-                  className={`category-filter ${categoryFilter === 'challenges' ? 'active' : ''}`}
-                  onClick={() => setCategoryFilter('challenges')}
-                >
-                  Challenges
-                </button>
-                <button
-                  className={`category-filter ${categoryFilter === 'author-events' ? 'active' : ''}`}
-                  onClick={() => setCategoryFilter('author-events')}
-                >
-                  Author Events
-                </button>
-                <button
-                  className={`category-filter ${categoryFilter === 'book-clubs' ? 'active' : ''}`}
-                  onClick={() => setCategoryFilter('book-clubs')}
-                >
-                  Book Clubs
-                </button>
-                <button
-                  className={`category-filter ${categoryFilter === 'workshops' ? 'active' : ''}`}
-                  onClick={() => setCategoryFilter('workshops')}
-                >
-                  Workshops
-                </button>
-                <button
-                  className={`category-filter ${categoryFilter === 'book-launches' ? 'active' : ''}`}
-                  onClick={() => setCategoryFilter('book-launches')}
-                >
-                  Book Launches
-                </button>
-                <button
-                  className={`category-filter ${categoryFilter === 'reading-events' ? 'active' : ''}`}
-                  onClick={() => setCategoryFilter('reading-events')}
-                >
-                  Reading Events
-                </button>
+            <div className="events-feed-header">
+              <h2 className="section-title">
+                <i className="fas fa-calendar-alt"></i> Events Calendar
+              </h2>
+              <div className="filter-tabs">
+                {filters.map(filter => (
+                  <button
+                    key={filter.id}
+                    className={`filter-tab ${activeFilter === filter.id ? 'active' : ''}`}
+                    onClick={() => setActiveFilter(filter.id)}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Events List */}
-            <div className="events-list">
+            <div className="category-filters">
+              {categories.map(category => (
+                <button
+                  key={category.id}
+                  className={`category-filter ${selectedCategory === category.id ? 'active' : ''}`}
+                  onClick={() => setSelectedCategory(category.id)}
+                >
+                  <i className={`fas ${category.icon}`}></i>
+                  {category.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="events-grid">
               {filteredEvents.map(event => (
                 <article key={event.id} className="event-card">
                   <div
@@ -315,7 +270,7 @@ function EventsHubPage() {
                   <li key={event.id} className="upcoming-event">
                     <div className="event-date-badge">
                       <div className="month">{event.date.split(' ')[0]}</div>
-                      <div className="day">{event.date.split(' ')[1].replace(',', '')}</div>
+                      <div className="day">{event.date.split(' ')[1]?.replace(',', '') || '1'}</div>
                     </div>
                     <div className="upcoming-event-content">
                       <h4>
@@ -329,6 +284,7 @@ function EventsHubPage() {
                 ))}
               </ul>
             </div>
+
             <div className="sidebar-widget">
               <h3 className="widget-title">
                 <i className="fas fa-users"></i> Popular Book Clubs
@@ -366,6 +322,7 @@ function EventsHubPage() {
                 </li>
               </ul>
             </div>
+
             <div className="create-event-widget">
               <div className="create-icon">
                 <i className="fas fa-plus-circle"></i>

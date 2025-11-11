@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { formatBook } from './utils/formatBook.js';
 import { normalizeAuthors } from './utils/normalizeAuthors.js';
+import notionService from './services/notion.js';
 
 // Load environment variables
 dotenv.config();
@@ -893,6 +894,158 @@ app.use((err, req, res, next) => {
             path: req.path
         })
     });
+});
+
+// Notion AI Integration Endpoints
+app.post('/api/notion/generate-description', async (req, res) => {
+    try {
+        const { title, authors, genre, tags } = req.body;
+
+        if (!title) {
+            return res.status(400).json({ error: 'Title is required' });
+        }
+
+        const bookData = {
+            title,
+            authors: Array.isArray(authors) ? authors : authors ? [authors] : [],
+            genre: genre || null,
+            tags: Array.isArray(tags) ? tags : tags ? [tags] : []
+        };
+
+        const result = await notionService.generateBookDescription(bookData);
+        res.json({
+            success: true,
+            description: result.description,
+            pageId: result.pageId
+        });
+    } catch (error) {
+        console.error('Notion description generation error:', error);
+        res.status(500).json({
+            error: 'Failed to generate description',
+            message: NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
+
+app.post('/api/notion/generate-summary', async (req, res) => {
+    try {
+        const { title, description, authors } = req.body;
+
+        if (!title) {
+            return res.status(400).json({ error: 'Title is required' });
+        }
+
+        const bookData = {
+            title,
+            description: description || null,
+            authors: Array.isArray(authors) ? authors : authors ? [authors] : []
+        };
+
+        const summary = await notionService.generateSummary(bookData);
+        res.json({
+            success: true,
+            summary
+        });
+    } catch (error) {
+        console.error('Notion summary generation error:', error);
+        res.status(500).json({
+            error: 'Failed to generate summary',
+            message: NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
+
+app.post('/api/notion/generate-marketing', async (req, res) => {
+    try {
+        const { title, authors, genre } = req.body;
+
+        if (!title) {
+            return res.status(400).json({ error: 'Title is required' });
+        }
+
+        const bookData = {
+            title,
+            authors: Array.isArray(authors) ? authors : authors ? [authors] : [],
+            genre: genre || null
+        };
+
+        const marketingCopy = await notionService.generateMarketingCopy(bookData);
+        res.json({
+            success: true,
+            marketingCopy
+        });
+    } catch (error) {
+        console.error('Notion marketing copy generation error:', error);
+        res.status(500).json({
+            error: 'Failed to generate marketing copy',
+            message: NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
+
+app.post('/api/notion/sync-book', async (req, res) => {
+    try {
+        const dbPool = req.app.locals.db;
+        if (!dbPool) {
+            return res.status(503).json({ error: 'Database unavailable' });
+        }
+
+        const { bookId } = req.body;
+
+        if (!bookId) {
+            return res.status(400).json({ error: 'Book ID is required' });
+        }
+
+        const book = await fetchBookWithRelations(dbPool, bookId);
+        if (!book) {
+            return res.status(404).json({ error: 'Book not found' });
+        }
+
+        const result = await notionService.syncBookToNotion(formatBook(book));
+        res.json({
+            success: true,
+            ...result
+        });
+    } catch (error) {
+        console.error('Notion sync error:', error);
+        res.status(500).json({
+            error: 'Failed to sync book to Notion',
+            message: NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
+
+app.get('/api/notion/books', async (req, res) => {
+    try {
+        const books = await notionService.getBooksFromNotion();
+        res.json({
+            success: true,
+            books,
+            count: books.length
+        });
+    } catch (error) {
+        console.error('Notion books fetch error:', error);
+        res.status(500).json({
+            error: 'Failed to fetch books from Notion',
+            message: NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
+
+app.get('/api/notion/status', async (req, res) => {
+    try {
+        const isAvailable = notionService.isAvailable();
+        res.json({
+            available: isAvailable,
+            configured: !!process.env.NOTION_API_KEY,
+            databaseId: !!process.env.NOTION_DATABASE_ID
+        });
+    } catch (error) {
+        res.status(500).json({
+            error: 'Failed to check Notion status',
+            message: NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
 });
 
 // 404 handler

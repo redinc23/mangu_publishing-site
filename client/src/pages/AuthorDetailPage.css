@@ -1,0 +1,241 @@
+/* Author Detail Page Styles */
+.author-detail-page {
+  background-color: #0f0f0f;
+  color: #f5f5f5;
+  min-height: 100vh;
+  padding-top: var(--header-height, 70px);
+}
+
+.author-detail-page .container {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+}
+
+/* Author Profile Header */
+.author-profile-header {
+  background-color: #1c1c1c;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+  margin-bottom: 2rem;
+}
+
+.author-profile-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 2.5rem;
+  padding: 2.5rem 0;
+}
+
+.author-media {
+  padding: 0 2.5rem;
+  border-right: 1px solid #333;
+  text-align: center;
+}
+
+.author-photo {
+  width: 200px;
+  height: 200px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 5px solid #E50914;
+  box-shadow: 0 0 10px rgba(229, 9, 20, 0.4);
+  margin-bottom: 1.5rem;
+}
+
+.author-info {
+  text-align: left;
+  margin-top: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.author-info strong {
+  color: #f5f5f5;
+  display: inline-block;
+  width: 80px;
+}
+
+.author-info p {
+  padding: 0.2rem 0;
+  color: #999999;
+}
+
+.author-details {
+  padding-right: 2.5rem;
+}
+
+.author-details h1 {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  color: #E50914;
+  line-height: 1;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.author-bio {
+  margin-top: 1.5rem;
+  font-size: 1.1rem;
+}
+
+.author-bio p {
+  margin-bottom: 1rem;
+  color: #999999;
+  line-height: 1.6;
+}
+
+.action-bar {
+  margin: 1.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.social-links {
+  display: flex;
+  gap: 1rem;
+}
+
+.social-links a {
+  font-size: 1.8rem;
+  color: #999999;
+  transition: color 0.2s;
+}
+
+.social-links a:hover {
+  color: #E50914;
+}
+
+.follow-button {
+  padding: 0.7rem 1.8rem;
+  background-color: #E50914;
+  color: #f5f5f5;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  transition: background-color 0.3s, transform 0.1s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+}
+
+.follow-button:hover {
+  background-color: #ff4d58;
+  transform: translateY(-2px);
+}
+
+/* Books Section */
+.books-section {
+  padding-top: 2.5rem;
+}
+
+.books-section h2 {
+  font-size: 2.5rem;
+  margin-bottom: 1.5rem;
+  border-left: 6px solid #E50914;
+  padding-left: 15px;
+  color: #f5f5f5;
+}
+
+.book-carousel-wrapper {
+  position: relative;
+}
+
+.book-carousel-container {
+  overflow-x: auto;
+  padding: 10px 0;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.book-carousel-container::-webkit-scrollbar {
+  display: none;
+}
+
+.book-carousel {
+  display: flex;
+  gap: 1.5rem;
+  width: fit-content;
+}
+
+.book-card {
+  flex: 0 0 180px;
+  background-color: #1c1c1c;
+  border-radius: 6px;
+  overflow: hidden;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.book-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 10px 25px rgba(229, 9, 20, 0.3);
+}
+
+.book-cover {
+  width: 100%;
+  height: 270px;
+  object-fit: cover;
+  display: block;
+}
+
+.book-card-title {
+  padding: 0.7rem 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #f5f5f5;
+}
+
+.book-card a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Loading & Error States */
+.loading,
+.error {
+  text-align: center;
+  padding: 4rem 2rem;
+  font-size: 1.2rem;
+  color: #999999;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .author-profile-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .author-media {
+    border-right: none;
+    border-bottom: 1px solid #333;
+    padding-bottom: 2rem;
+  }
+  
+  .author-details {
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .author-details h1 {
+    font-size: 2.5rem;
+  }
+  
+  .books-section h2 {
+    font-size: 2rem;
+  }
+  
+  .book-card {
+    flex: 0 0 150px;
+  }
+}
+
