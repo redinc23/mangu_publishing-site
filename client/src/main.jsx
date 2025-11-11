@@ -42,9 +42,9 @@ class ErrorBoundary extends React.Component {
           <h1 style={{ color: '#e74c3c', marginBottom: '20px' }}>
             Something went wrong
           </h1>
-          <p style={{ color: '#666', marginBottom: '20px' }}>
-            We're sorry, but something unexpected happened.
-          </p>
+            <p style={{ color: '#666', marginBottom: '20px' }}>
+              We&apos;re sorry, but something unexpected happened.
+            </p>
           <button
             onClick={() => window.location.reload()}
             style={{

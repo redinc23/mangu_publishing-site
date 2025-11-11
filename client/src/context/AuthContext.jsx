@@ -39,10 +39,10 @@ if (missingAmplifyEnv.length) {
 }
 
 // after imports, before Amplify.configure
-// @ts-ignore
+// @ts-expect-error - tracking Amplify configuration on the window object
 if (!window.__AMPLIFY_CONFIGURED__) {
   Amplify.configure(amplifyConfig);
-  // @ts-ignore
+  // @ts-expect-error - tracking Amplify configuration on the window object
   window.__AMPLIFY_CONFIGURED__ = true;
 }
 

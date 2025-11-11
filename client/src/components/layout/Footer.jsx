@@ -55,16 +55,40 @@ function Footer() {
       <div className="footer-bottom">
         <p>&copy; {currentYear} MANGU PUBLISHING. All rights reserved.</p>
         <div className="social-links">
-          <a href="#" className="social-link" aria-label="Facebook">
+          <a
+            href="https://www.facebook.com/ManguPublishing"
+            className="social-link"
+            aria-label="Facebook"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <i className="fab fa-facebook-f"></i>
           </a>
-          <a href="#" className="social-link" aria-label="Twitter">
+          <a
+            href="https://twitter.com/ManguPublishing"
+            className="social-link"
+            aria-label="Twitter"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <i className="fab fa-twitter"></i>
           </a>
-          <a href="#" className="social-link" aria-label="Instagram">
+          <a
+            href="https://www.instagram.com/ManguPublishing"
+            className="social-link"
+            aria-label="Instagram"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <i className="fab fa-instagram"></i>
           </a>
-          <a href="#" className="social-link" aria-label="YouTube">
+          <a
+            href="https://www.youtube.com/@ManguPublishing"
+            className="social-link"
+            aria-label="YouTube"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <i className="fab fa-youtube"></i>
           </a>
         </div>

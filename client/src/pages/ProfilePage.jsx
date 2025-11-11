@@ -292,22 +292,22 @@ function ProfilePage() {
             </div>
             <div className="profile-library-grid">
               {activeList.length ? (
-                activeList.map((book) => (
-                  <article
-                    key={book.id}
-                    className="profile-library-card"
-                    onClick={() => navigate(`/book/${book.id}`)}
-                  >
-                    <div className="library-card-cover">
-                      <img src={book.cover} alt={book.title} />
-                    </div>
-                    <div className="library-card-body">
-                      <h3>{book.title}</h3>
-                      <p>{book.author}</p>
-                      <span>{book.genre || 'Featured genre'}</span>
-                    </div>
-                  </article>
-                ))
+                  activeList.map((book) => (
+                    <Link
+                      key={book.id}
+                      className="profile-library-card"
+                      to={`/book/${book.id}`}
+                    >
+                      <div className="library-card-cover">
+                        <img src={book.cover} alt={book.title} />
+                      </div>
+                      <div className="library-card-body">
+                        <h3>{book.title}</h3>
+                        <p>{book.author}</p>
+                        <span>{book.genre || 'Featured genre'}</span>
+                      </div>
+                    </Link>
+                  ))
               ) : (
                 <div className="profile-empty-list">
                   <p>No titles yet. Start building your universe.</p>
@@ -432,24 +432,32 @@ function ProfilePage() {
             <div className="profile-preferences" id="preferences">
               <h2>Preferences</h2>
               <div className="preference-toggle">
-                {[
-                  { key: 'weeklyDigest', label: 'Weekly MANGU digest', description: 'Curated picks delivered every Sunday.' },
-                  { key: 'releaseAlerts', label: 'New release alerts', description: 'Be the first to know when authors you follow publish.' },
-                  { key: 'autoPlayAudio', label: 'Autoplay audiobooks', description: 'Automatically switch to the audio track when it\'s available.' },
-                  { key: 'darkMode', label: 'Match system dark mode', description: 'Sync theme with your device appearance.' }
-                ].map((option) => (
-                  <label key={option.key} className="toggle-row">
-                    <div>
-                      <span>{option.label}</span>
-                      <p>{option.description}</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={preferences[option.key]}
-                      onChange={() => handlePreferenceToggle(option.key)}
-                    />
-                  </label>
-                ))}
+                  {[
+                    { key: 'weeklyDigest', label: 'Weekly MANGU digest', description: 'Curated picks delivered every Sunday.' },
+                    { key: 'releaseAlerts', label: 'New release alerts', description: 'Be the first to know when authors you follow publish.' },
+                    { key: 'autoPlayAudio', label: 'Autoplay audiobooks', description: 'Automatically switch to the audio track when it\'s available.' },
+                    { key: 'darkMode', label: 'Match system dark mode', description: 'Sync theme with your device appearance.' }
+                  ].map((option) => {
+                    const inputId = `preference-${option.key}`;
+                    const descriptionId = `${inputId}-description`;
+                    const labelId = `${inputId}-label`;
+                    return (
+                      <div key={option.key} className="toggle-row">
+                        <div>
+                          <span id={labelId}>{option.label}</span>
+                          <p id={descriptionId}>{option.description}</p>
+                        </div>
+                        <input
+                          id={inputId}
+                          type="checkbox"
+                          checked={preferences[option.key]}
+                          onChange={() => handlePreferenceToggle(option.key)}
+                          aria-labelledby={labelId}
+                          aria-describedby={descriptionId}
+                        />
+                      </div>
+                    );
+                  })}
               </div>
 
               <div className="profile-security" id="privacy">

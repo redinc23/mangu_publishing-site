@@ -32,27 +32,47 @@ const BookCard = ({ book, variant = 'detailed' }) => {
       {/* Overlay (appears on hover or always visible on certain variants) */}
       <div className={styles.bookOverlay}>
         {/* Actions */}
-        <div className={styles.bookActions}>
-          {isGrid ? (
-            /* In grid variant, only show an "Add to Cart" button */
-            <div className={styles.bookAction} onClick={handleAddToCart}>
-              <i className="fas fa-shopping-cart"></i>
-            </div>
-          ) : (
-            /* In detailed variant, show Read, Bookmark, and Cart actions */
-            <>
-              <div className={styles.bookAction} onClick={handleReadNow}>
-                <i className="fas fa-play"></i>
-              </div>
-              <div className={styles.bookAction} onClick={handleAddToLibrary}>
-                <i className="fas fa-bookmark"></i>
-              </div>
-              <div className={styles.bookAction} onClick={handleAddToCart}>
+          <div className={styles.bookActions}>
+            {isGrid ? (
+              /* In grid variant, only show an "Add to Cart" button */
+              <button
+                type="button"
+                className={styles.bookAction}
+                onClick={handleAddToCart}
+                aria-label={`Add ${title} to cart`}
+              >
                 <i className="fas fa-shopping-cart"></i>
-              </div>
-            </>
-          )}
-        </div>
+              </button>
+            ) : (
+              /* In detailed variant, show Read, Bookmark, and Cart actions */
+              <>
+                <button
+                  type="button"
+                  className={styles.bookAction}
+                  onClick={handleReadNow}
+                  aria-label={`Read ${title}`}
+                >
+                  <i className="fas fa-play"></i>
+                </button>
+                <button
+                  type="button"
+                  className={styles.bookAction}
+                  onClick={handleAddToLibrary}
+                  aria-label={`Add ${title} to library`}
+                >
+                  <i className="fas fa-bookmark"></i>
+                </button>
+                <button
+                  type="button"
+                  className={styles.bookAction}
+                  onClick={handleAddToCart}
+                  aria-label={`Add ${title} to cart`}
+                >
+                  <i className="fas fa-shopping-cart"></i>
+                </button>
+              </>
+            )}
+          </div>
         {/* Info (title, author, rating) */}
         <div className={styles.bookInfo}>
           <div className={styles.bookTitle}>{title}</div>

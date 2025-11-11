@@ -20,7 +20,13 @@ const SearchResultsPage = () => {
   return (
     <main style={{ padding: '80px 20px' }}>
       <h1>Search Results</h1>
-      {query ? <p>Results for "<strong>{query}</strong>":</p> : <p>Please enter a search query.</p>}
+        {query ? (
+          <p>
+            Results for &quot;<strong>{query}</strong>&quot;:
+          </p>
+        ) : (
+          <p>Please enter a search query.</p>
+        )}
       {results.length === 0 ? (
         query ? <p>No results found.</p> : null
       ) : (

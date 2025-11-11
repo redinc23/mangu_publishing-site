@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { signIn } from 'aws-amplify/auth'; // CHANGED IMPORT
 import { useAuth } from '../../context/AuthContext';
 import styles from './AuthModal.module.css';
 
@@ -32,8 +31,21 @@ const LoginModal = ({ isOpen, onClose, onSwitchToSignup }) => {
   if (!isOpen) return null;
 
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modal} onClick={e => e.stopPropagation()}>
+    <div
+      className={styles.modalOverlay}
+      onMouseDown={onClose}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      }}
+      role="presentation"
+    >
+      <div
+        className={styles.modal}
+        onMouseDown={(event) => event.stopPropagation()}
+        role="presentation"
+      >
         <div className={styles.modalHeader}>
           <h2>Sign In to MANGU</h2>
           <button className={styles.closeButton} onClick={onClose}>×</button>
@@ -76,9 +88,9 @@ const LoginModal = ({ isOpen, onClose, onSwitchToSignup }) => {
         </form>
         
         <div className={styles.modalFooter}>
-          <p>
-            Don't have an account? 
-            <button 
+            <p>
+              Don&apos;t have an account? 
+              <button 
               className={styles.linkButton}
               onClick={onSwitchToSignup}
             >
