@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import './CartPage.css';
 
@@ -330,56 +330,45 @@ function CartPage() {
           </button>
         </div>
 
-        {loadingRecommendations ? (
-          <div className="recommendations-loading">
-            <div className="spinner" />
-            <p>Collecting stories tailored to you…</p>
-          </div>
-        ) : (
-          <div className="recommendations-grid">
-            {recommendations.map(book => (
-              <article
-                key={book.id}
-                className="recommendation-card"
-                onClick={() => navigate(`/book/${book.id}`)}
-              >
-                <div className="recommendation-cover">
-                  <img src={book.cover} alt={book.title} />
-                </div>
-                <div className="recommendation-body">
-                  <h3>{book.title}</h3>
-                  <p>{book.author}</p>
-                  <div className="recommendation-meta">
-                    <span>{book.genre || 'Literature'}</span>
-                    {book.rating && (
-                      <span><i className="fas fa-star"></i> {parseFloat(book.rating).toFixed(1)}</span>
-                    )}
+          {loadingRecommendations ? (
+            <div className="recommendations-loading">
+              <div className="spinner" />
+              <p>Collecting stories tailored to you…</p>
+            </div>
+          ) : (
+            <div className="recommendations-grid">
+              {recommendations.map(book => (
+                <article key={book.id} className="recommendation-card">
+                  <Link to={`/book/${book.id}`} className="recommendation-cover" aria-label={`View details for ${book.title}`}>
+                    <img src={book.cover} alt={book.title} />
+                  </Link>
+                  <div className="recommendation-body">
+                    <Link to={`/book/${book.id}`}>
+                      <h3>{book.title}</h3>
+                    </Link>
+                    <p>{book.author}</p>
+                    <div className="recommendation-meta">
+                      <span>{book.genre || 'Literature'}</span>
+                      {book.rating && (
+                        <span><i className="fas fa-star"></i> {parseFloat(book.rating).toFixed(1)}</span>
+                      )}
+                    </div>
+                    <div className="recommendation-actions">
+                      <Link to={`/book/${book.id}`} className="ghost-button">
+                        Preview book
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => addToCart(book.id)}
+                      >
+                        Add to cart
+                      </button>
+                    </div>
                   </div>
-                  <div className="recommendation-actions">
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        navigate(`/book/${book.id}`);
-                      }}
-                    >
-                      Preview book
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        addToCart(book.id);
-                      }}
-                    >
-                      Add to cart
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
+                </article>
+              ))}
+            </div>
+          )}
       </section>
     </div>
   );

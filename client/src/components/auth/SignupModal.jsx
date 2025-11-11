@@ -1,5 +1,4 @@
-  import React, { useState } from 'react';
-import { signUp, confirmSignUp } from 'aws-amplify/auth'; // CHANGED IMPORT
+import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import styles from './AuthModal.module.css';
 
@@ -58,8 +57,21 @@ const SignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
   if (!isOpen) return null;
 
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modal} onClick={e => e.stopPropagation()}>
+    <div
+      className={styles.modalOverlay}
+      onMouseDown={onClose}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      }}
+      role="presentation"
+    >
+      <div
+        className={styles.modal}
+        onMouseDown={(event) => event.stopPropagation()}
+        role="presentation"
+      >
         <div className={styles.modalHeader}>
           <h2>{needsConfirmation ? 'Confirm Your Email' : 'Create Your Account'}</h2>
           <button className={styles.closeButton} onClick={onClose}>×</button>
@@ -144,10 +156,10 @@ const SignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
         )}
         
         {!needsConfirmation && (
-          <div className={styles.modalFooter}>
-            <p>
-              Already have an account? 
-              <button 
+            <div className={styles.modalFooter}>
+              <p>
+                Already have an account? 
+                <button 
                 className={styles.linkButton}
                 onClick={onSwitchToLogin}
               >

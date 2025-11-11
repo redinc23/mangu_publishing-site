@@ -37,7 +37,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
 
       - name: Install server dependencies
         run: cd server && npm ci
@@ -60,29 +60,29 @@ jobs:
           # Reset and verify init.sql for good measure
           FORCE_RESET=1 node src/database/reset.js
 
-  security-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Run npm audit (server)
-        run: cd server && npm audit --production --audit-level=moderate
-        continue-on-error: true
+    security-scan:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v3
+        
+        - name: Run npm audit (server)
+          run: cd server && npm audit --production --audit-level=moderate
+          continue-on-error: true
 
-      - name: Run npm audit (client)
-        run: cd client && npm audit --production --audit-level=moderate
-        continue-on-error: true
+        - name: Run npm audit (client)
+          run: cd client && npm audit --production --audit-level=moderate
+          continue-on-error: true
 
-      - name: Run CodeQL Analysis
-        uses: github/codeql-action/init@v2
-        with:
-          languages: javascript
-          queries: security-extended
+        - name: Run CodeQL Analysis
+          uses: github/codeql-action/init@v2
+          with:
+            languages: javascript
+            queries: security-extended
 
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-        with:
-          category: "/language:javascript"
+        - name: Perform CodeQL Analysis
+          uses: github/codeql-action/analyze@v2
+          with:
+            category: /language:javascript
 
   lint-and-test:
     runs-on: ubuntu-latest
@@ -107,7 +107,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
 
       - name: Install dependencies
         run: |

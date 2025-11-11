@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import BookCard from '../../components/BookCard';
 import styles from './TopRatedRow.module.css';
 
@@ -17,7 +18,9 @@ const TopRatedRow = () => {
     <section className={styles.contentSection}>
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>Top Rated Books</h2>
-        <a href="#" className={styles.viewAll}>See all</a>
+        <Link to="/library/top-rated" className={styles.viewAll}>
+          See all
+        </Link>
       </div>
       <div className={styles.booksContainer}>
         <div className={styles.booksRow}>

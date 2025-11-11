@@ -261,57 +261,67 @@ function HomePage() {
             <i className="fas fa-chevron-left"></i>
           </button>
           <div className="carousel-track">
-            {loading ? (
-              <div className="loading-spinner">Loading...</div>
-            ) : trendingBooks.length > 0 ? (
-              trendingBooks.map((book) => (
-                <div
-                  className="book-card"
-                  key={book.id}
-                  onClick={() => navigate(`/book/${book.id}`)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {book.is_new_release && <span className="new-badge">New</span>}
-                  <img
-                    src={book.cover_url || 'https://images.unsplash.com/photo-1541963463532-d68292c34b19?auto=format&fit=crop&w=200&h=300&q=80'}
-                    alt={book.title}
-                  />
-                  <div className="book-info">
-                    <h3 className="book-title">{book.title}</h3>
-                    <div className="book-metadata">
-                      <span>{book.authors?.map(a => a.name).join(', ') || 'Unknown'}</span>
-                      <span>•</span>
-                      <span>{new Date(book.publication_date).getFullYear()}</span>
-                    </div>
-                    <div className="book-genres">
-                      {book.categories?.slice(0, 2).map((cat, idx) => (
-                        <span key={idx} className="genre">{cat}</span>
-                      ))}
-                    </div>
-                    <div className="book-buttons">
-                      <div
-                        className="icon-button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/book/${book.id}`);
-                        }}
-                      >
-                        <i className="fas fa-play"></i>
+              {loading ? (
+                <div className="loading-spinner">Loading...</div>
+              ) : trendingBooks.length > 0 ? (
+                trendingBooks.map((book) => (
+                  <div
+                    className="book-card"
+                    key={book.id}
+                    onClick={() => navigate(`/book/${book.id}`)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        navigate(`/book/${book.id}`);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {book.is_new_release && <span className="new-badge">New</span>}
+                    <img
+                      src={book.cover_url || 'https://images.unsplash.com/photo-1541963463532-d68292c34b19?auto=format&fit=crop&w=200&h=300&q=80'}
+                      alt={book.title}
+                    />
+                    <div className="book-info">
+                      <h3 className="book-title">{book.title}</h3>
+                      <div className="book-metadata">
+                        <span>{book.authors?.map(a => a.name).join(', ') || 'Unknown'}</span>
+                        <span>•</span>
+                        <span>{new Date(book.publication_date).getFullYear()}</span>
                       </div>
-                      <div
-                        className="icon-button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddToLibrary(book.id);
-                        }}
-                      >
-                        <i className="fas fa-bookmark"></i>
+                      <div className="book-genres">
+                        {book.categories?.slice(0, 2).map((cat, idx) => (
+                          <span key={idx} className="genre">{cat}</span>
+                        ))}
+                      </div>
+                      <div className="book-buttons">
+                        <button
+                          type="button"
+                          className="icon-button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            navigate(`/book/${book.id}`);
+                          }}
+                        >
+                          <i className="fas fa-play"></i>
+                        </button>
+                        <button
+                          type="button"
+                          className="icon-button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleAddToLibrary(book.id);
+                          }}
+                        >
+                          <i className="fas fa-bookmark"></i>
+                        </button>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))
-            ) : (
+                ))
+              ) : (
               <div className="no-data">No trending books available</div>
             )}
           </div>
@@ -332,44 +342,63 @@ function HomePage() {
 
         <div className="books-container">
           <div className="books-row">
-            {loading ? (
-              <div className="loading-spinner">Loading...</div>
-            ) : newReleases.length > 0 ? (
-              newReleases.map((book) => (
-                <div className="book-card" key={book.id}>
-                  <img
-                    src={book.cover_url || `https://images.unsplash.com/photo-1515125520141-3e3b67bc0a88?auto=format&fit=crop&w=120&h=180&q=80`}
-                    alt={book.title}
+              {loading ? (
+                <div className="loading-spinner">Loading...</div>
+              ) : newReleases.length > 0 ? (
+                newReleases.map((book) => (
+                  <div
+                    className="book-card"
+                    key={book.id}
                     onClick={() => navigate(`/book/${book.id}`)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        navigate(`/book/${book.id}`);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
                     style={{ cursor: 'pointer' }}
-                  />
-                  <div className="book-overlay">
-                    <div className="book-actions">
-                      <div
-                        className="book-action"
-                        onClick={() => navigate(`/book/${book.id}`)}
-                      >
-                        <i className="fas fa-play"></i>
+                  >
+                    <img
+                      src={book.cover_url || `https://images.unsplash.com/photo-1515125520141-3e3b67bc0a88?auto=format&fit=crop&w=120&h=180&q=80`}
+                      alt={book.title}
+                    />
+                    <div className="book-overlay">
+                      <div className="book-actions">
+                        <button
+                          type="button"
+                          className="book-action"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            navigate(`/book/${book.id}`);
+                          }}
+                        >
+                          <i className="fas fa-play"></i>
+                        </button>
+                        <button
+                          type="button"
+                          className="book-action"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleAddToLibrary(book.id);
+                          }}
+                        >
+                          <i className="fas fa-plus"></i>
+                        </button>
                       </div>
-                      <div
-                        className="book-action"
-                        onClick={() => handleAddToLibrary(book.id)}
-                      >
-                        <i className="fas fa-plus"></i>
-                      </div>
-                    </div>
-                    <div className="book-info">
-                      <div className="book-title-small">{book.title}</div>
-                      <div className="book-author">{book.authors?.map(a => a.name).join(', ') || 'Unknown'}</div>
-                      <div className="book-rating">
-                        {'★'.repeat(Math.round(book.rating || 0))}
-                        {'☆'.repeat(5 - Math.round(book.rating || 0))}
+                      <div className="book-info">
+                        <div className="book-title-small">{book.title}</div>
+                        <div className="book-author">{book.authors?.map(a => a.name).join(', ') || 'Unknown'}</div>
+                        <div className="book-rating">
+                          {'★'.repeat(Math.round(book.rating || 0))}
+                          {'☆'.repeat(5 - Math.round(book.rating || 0))}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))
-            ) : (
+                ))
+              ) : (
               <div className="no-data">No new releases available</div>
             )}
           </div>

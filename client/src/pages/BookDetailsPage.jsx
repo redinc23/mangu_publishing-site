@@ -55,7 +55,7 @@ function BookDetailsPage() {
         <div className="error-container">
           <i className="fas fa-exclamation-triangle"></i>
           <h2>Book Not Found</h2>
-          <p>The book you're looking for doesn't exist or has been removed.</p>
+            <p>The book you&apos;re looking for doesn&apos;t exist or has been removed.</p>
           <button className="btn btn-primary" onClick={() => navigate('/library')}>
             Browse Library
           </button>

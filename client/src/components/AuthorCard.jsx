@@ -20,12 +20,22 @@ const AuthorCard = ({ author }) => {
       <img src={photo} alt={name} className={styles.bookCover} />
       <div className={styles.bookOverlay}>
         <div className={styles.bookActions}>
-          <div className={styles.bookAction} onClick={handleFollowAuthor}>
+          <button
+            type="button"
+            className={styles.bookAction}
+            onClick={handleFollowAuthor}
+            aria-label={`Follow ${name}`}
+          >
             <i className="fas fa-user-plus"></i>
-          </div>
-          <div className={styles.bookAction} onClick={handleViewBooks}>
+          </button>
+          <button
+            type="button"
+            className={styles.bookAction}
+            onClick={handleViewBooks}
+            aria-label={`View books by ${name}`}
+          >
             <i className="fas fa-book"></i>
-          </div>
+          </button>
         </div>
         <div className={styles.bookInfo}>
           <div className={styles.bookTitle}>{name}</div>
