@@ -1,0 +1,236 @@
+name: Manual Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to rollback'
+        required: true
+        type: choice
+        options:
+          - server
+          - client
+          - both
+      revision:
+        description: 'Task definition revision to rollback to (leave empty for previous)'
+        required: false
+        type: string
+      confirm:
+        description: 'Type "rollback" to confirm'
+        required: true
+        type: string
+
+env:
+  AWS_REGION: us-east-1
+  ECS_CLUSTER: mangu-publishing-cluster-production
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'rollback'
+    steps:
+      - name: Validate confirmation
+        run: |
+          echo "✅ Rollback confirmed"
+          echo "Service: ${{ github.event.inputs.service }}"
+          echo "Revision: ${{ github.event.inputs.revision || 'previous' }}"
+
+  rollback:
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get current task definitions
+        id: current
+        run: |
+          SERVER_CURRENT=$(aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services mangu-publishing-server-production \
+            --region ${{ env.AWS_REGION }} \
+            --query 'services[0].taskDefinition' \
+            --output text)
+          
+          CLIENT_CURRENT=$(aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services mangu-publishing-client-production \
+            --region ${{ env.AWS_REGION }} \
+            --query 'services[0].taskDefinition' \
+            --output text)
+          
+          echo "server_current=$SERVER_CURRENT" >> $GITHUB_OUTPUT
+          echo "client_current=$CLIENT_CURRENT" >> $GITHUB_OUTPUT
+          
+          echo "📋 Current Task Definitions:"
+          echo "Server: $SERVER_CURRENT"
+          echo "Client: $CLIENT_CURRENT"
+
+      - name: Get previous task definitions
+        id: previous
+        if: github.event.inputs.revision == ''
+        run: |
+          # Get task definition family and current revision
+          SERVER_FAMILY=$(echo "${{ steps.current.outputs.server_current }}" | cut -d: -f6 | cut -d/ -f2)
+          SERVER_REVISION=$(echo "${{ steps.current.outputs.server_current }}" | cut -d: -f7)
+          
+          CLIENT_FAMILY=$(echo "${{ steps.current.outputs.client_current }}" | cut -d: -f6 | cut -d/ -f2)
+          CLIENT_REVISION=$(echo "${{ steps.current.outputs.client_current }}" | cut -d: -f7)
+          
+          # Calculate previous revision (minimum 1)
+          SERVER_PREV_REV=$((SERVER_REVISION - 1))
+          CLIENT_PREV_REV=$((CLIENT_REVISION - 1))
+          
+          if [ $SERVER_PREV_REV -lt 1 ]; then
+            echo "❌ Cannot rollback server: already at revision 1"
+            SERVER_PREV_REV=1
+          fi
+          
+          if [ $CLIENT_PREV_REV -lt 1 ]; then
+            echo "❌ Cannot rollback client: already at revision 1"
+            CLIENT_PREV_REV=1
+          fi
+          
+          # Construct previous task definition ARNs
+          SERVER_PREV="arn:aws:ecs:${{ env.AWS_REGION }}:$(aws sts get-caller-identity --query Account --output text):task-definition/${SERVER_FAMILY}:${SERVER_PREV_REV}"
+          CLIENT_PREV="arn:aws:ecs:${{ env.AWS_REGION }}:$(aws sts get-caller-identity --query Account --output text):task-definition/${CLIENT_FAMILY}:${CLIENT_PREV_REV}"
+          
+          echo "server_target=$SERVER_PREV" >> $GITHUB_OUTPUT
+          echo "client_target=$CLIENT_PREV" >> $GITHUB_OUTPUT
+          
+          echo "📋 Previous Task Definitions:"
+          echo "Server: $SERVER_PREV"
+          echo "Client: $CLIENT_PREV"
+
+      - name: Verify target task definitions exist
+        run: |
+          SERVER_TARGET="${{ github.event.inputs.revision || steps.previous.outputs.server_target }}"
+          CLIENT_TARGET="${{ github.event.inputs.revision || steps.previous.outputs.client_target }}"
+          
+          if [[ "${{ github.event.inputs.service }}" == "server" || "${{ github.event.inputs.service }}" == "both" ]]; then
+            echo "Verifying server task definition: $SERVER_TARGET"
+            if ! aws ecs describe-task-definition --task-definition "$SERVER_TARGET" --region ${{ env.AWS_REGION }} > /dev/null 2>&1; then
+              echo "❌ Server task definition not found: $SERVER_TARGET"
+              exit 1
+            fi
+            echo "✅ Server task definition exists"
+          fi
+          
+          if [[ "${{ github.event.inputs.service }}" == "client" || "${{ github.event.inputs.service }}" == "both" ]]; then
+            echo "Verifying client task definition: $CLIENT_TARGET"
+            if ! aws ecs describe-task-definition --task-definition "$CLIENT_TARGET" --region ${{ env.AWS_REGION }} > /dev/null 2>&1; then
+              echo "❌ Client task definition not found: $CLIENT_TARGET"
+              exit 1
+            fi
+            echo "✅ Client task definition exists"
+          fi
+
+      - name: Rollback server
+        if: github.event.inputs.service == 'server' || github.event.inputs.service == 'both'
+        run: |
+          TARGET="${{ github.event.inputs.revision || steps.previous.outputs.server_target }}"
+          
+          echo "🔄 Rolling back server to: $TARGET"
+          
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service mangu-publishing-server-production \
+            --task-definition "$TARGET" \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+          
+          echo "✅ Server rollback initiated"
+
+      - name: Rollback client
+        if: github.event.inputs.service == 'client' || github.event.inputs.service == 'both'
+        run: |
+          TARGET="${{ github.event.inputs.revision || steps.previous.outputs.client_target }}"
+          
+          echo "🔄 Rolling back client to: $TARGET"
+          
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service mangu-publishing-client-production \
+            --task-definition "$TARGET" \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+          
+          echo "✅ Client rollback initiated"
+
+      - name: Wait for deployment stability
+        run: |
+          echo "⏳ Waiting for services to stabilize..."
+          
+          SERVICES=""
+          if [[ "${{ github.event.inputs.service }}" == "server" || "${{ github.event.inputs.service }}" == "both" ]]; then
+            SERVICES="$SERVICES mangu-publishing-server-production"
+          fi
+          if [[ "${{ github.event.inputs.service }}" == "client" || "${{ github.event.inputs.service }}" == "both" ]]; then
+            SERVICES="$SERVICES mangu-publishing-client-production"
+          fi
+          
+          for SERVICE in $SERVICES; do
+            echo "Waiting for $SERVICE..."
+            aws ecs wait services-stable \
+              --cluster ${{ env.ECS_CLUSTER }} \
+              --services $SERVICE \
+              --region ${{ env.AWS_REGION }}
+            echo "✅ $SERVICE is stable"
+          done
+
+      - name: Verify rollback
+        run: |
+          echo "🔍 Verifying deployment status..."
+          
+          aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services mangu-publishing-server-production mangu-publishing-client-production \
+            --region ${{ env.AWS_REGION }} \
+            --query 'services[*].{Service:serviceName,TaskDef:taskDefinition,Desired:desiredCount,Running:runningCount,Status:deployments[0].rolloutState}' \
+            --output table
+
+      - name: Run smoke tests
+        run: |
+          echo "🧪 Running smoke tests after rollback..."
+          chmod +x scripts/smoke-tests.sh
+          ./scripts/smoke-tests.sh ${{ secrets.PRODUCTION_URL }}
+
+      - name: Post rollback summary
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = '${{ job.status }}' === 'success' ? '✅' : '❌';
+            const comment = `## ${status} Rollback ${status === '✅' ? 'Successful' : 'Failed'}
+            
+            **Service:** \`${{ github.event.inputs.service }}\`
+            **Revision:** \`${{ github.event.inputs.revision || 'previous' }}\`
+            **Triggered by:** @${{ github.actor }}
+            **Workflow:** [View Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            
+            ### Previous State
+            - Server: \`${{ steps.current.outputs.server_current }}\`
+            - Client: \`${{ steps.current.outputs.client_current }}\`
+            
+            ### Target State
+            - Server: \`${{ github.event.inputs.revision || steps.previous.outputs.server_target }}\`
+            - Client: \`${{ github.event.inputs.revision || steps.previous.outputs.client_target }}\`
+            
+            ${status === '✅' ? '✅ Rollback completed successfully and smoke tests passed.' : '❌ Rollback failed. Check workflow logs for details.'}
+            `;
+            
+            github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: comment
+            })

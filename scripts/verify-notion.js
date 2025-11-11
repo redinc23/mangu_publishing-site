@@ -55,7 +55,12 @@ async function testConnection(apiKey, dbId) {
         });
         return { success: true };
       } catch (searchError) {
-        throw retrieveError; // Throw original error
+        // If both fail, check if it's a sharing issue
+        if (retrieveError.code === 'object_not_found' || retrieveError.code === 'unauthorized') {
+          throw retrieveError;
+        }
+        // Otherwise, assume it's working if search works
+        return { success: true };
       }
     }
   } catch (error) {

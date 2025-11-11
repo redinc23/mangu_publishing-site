@@ -2,9 +2,14 @@
 
 ## Quick Rollback
 
-### Automatic Rollback (Fastest)
+### Automatic Rollback (Fastest - Recommended)
 
-ECS has circuit breaker enabled - it will automatically rollback if deployment fails.
+ECS Circuit Breaker is enabled and will **automatically rollback** if:
+- Tasks fail health checks
+- Tasks crash repeatedly
+- Deployment can't reach stable state
+
+**No manual action needed** - the circuit breaker handles it automatically.
 
 Monitor automatic rollback:
 ```bash
@@ -16,9 +21,23 @@ aws ecs describe-services \
 
 ### Manual Rollback via GitHub Actions
 
+**Use the dedicated rollback workflow:**
+
 1. Go to GitHub Actions
-2. Find last successful deployment
-3. Click "Re-run all jobs"
+2. Select "Manual Rollback" workflow
+3. Click "Run workflow"
+4. Choose:
+   - Service: `server`, `client`, or `both`
+   - Revision: Leave empty for previous, or specify revision number
+   - Confirmation: Type `rollback`
+5. Click "Run workflow"
+
+The workflow will:
+- ✅ Validate the target revision exists
+- ✅ Rollback the selected service(s)
+- ✅ Wait for stability
+- ✅ Run smoke tests
+- ✅ Post summary comment
 
 ### Command-Line Rollback
 

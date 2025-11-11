@@ -198,18 +198,20 @@ export function getConfig() {
 export function requireValidEnv() {
   const validation = validateEnv();
   
-  if (validation.warnings.length > 0) {
+  if (validation.warnings.length > 0 && process.env.NODE_ENV !== 'test') {
     console.warn('⚠️  Environment warnings:');
     validation.warnings.forEach(warning => console.warn(`  - ${warning}`));
   }
   
   if (!validation.valid) {
-    console.error('❌ Environment validation failed:');
-    validation.errors.forEach(error => console.error(`  - ${error}`));
-    
     if (process.env.NODE_ENV === 'production') {
+      console.error('❌ Environment validation failed:');
+      validation.errors.forEach(error => console.error(`  - ${error}`));
       console.error('\n💡 See docs/PRODUCTION_ENV.md for configuration guide');
       process.exit(1);
+    } else if (process.env.NODE_ENV !== 'test') {
+      console.warn('⚠️  Environment validation warnings (development mode):');
+      validation.errors.forEach(error => console.warn(`  - ${error}`));
     }
   }
   

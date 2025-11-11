@@ -143,12 +143,48 @@ jobs:
           chmod +x scripts/smoke-tests.sh
           ./scripts/smoke-tests.sh ${{ secrets.PRODUCTION_URL }}
 
-      - name: Notify on failure
+      - name: Check deployment status
         if: failure()
         run: |
-          echo "Deployment failed! Rolling back..."
-          aws ecs update-service \
+          echo "⚠️ Deployment or smoke tests failed!"
+          echo "ECS Circuit Breaker will automatically rollback unhealthy deployments."
+          echo ""
+          echo "Checking current deployment status..."
+          
+          aws ecs describe-services \
             --cluster ${{ env.ECS_CLUSTER }} \
-            --service ${{ env.ECS_SERVER_SERVICE }} \
-            --task-definition $(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVER_SERVICE }} --query 'services[0].taskDefinition' --output text | sed 's/:.*//'):$(expr $(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVER_SERVICE }} --query 'services[0].taskDefinition' --output text | sed 's/.*://') - 1) \
-            --region ${{ env.AWS_REGION }}
+            --services ${{ env.ECS_SERVER_SERVICE }} ${{ env.ECS_CLIENT_SERVICE }} \
+            --region ${{ env.AWS_REGION }} \
+            --query 'services[*].{Service:serviceName,Status:deployments[0].status,Rollout:deployments[0].rolloutState,Desired:desiredCount,Running:runningCount}' \
+            --output table
+
+      - name: Notify failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = `## 🚨 Deployment Failed
+            
+            **Branch:** \`${{ github.ref_name }}\`
+            **Commit:** \`${{ github.sha }}\`
+            **Workflow:** [View Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            
+            ### Status
+            ECS Circuit Breaker will automatically rollback if health checks fail.
+            
+            ### Next Steps
+            1. Review CloudWatch logs: \`/ecs/${{ env.ECS_CLUSTER }}\`
+            2. Check smoke test output in workflow logs
+            3. Verify ECS service events for rollback status
+            4. If circuit breaker didn't trigger, manual rollback may be needed
+            
+            ### Manual Rollback (if needed)
+            See [docs/runbooks/rollback.md](./docs/runbooks/rollback.md) for procedures.
+            `;
+            
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number || context.payload.pull_request?.number,
+              body: comment
+            }).catch(() => console.log('No PR to comment on'))

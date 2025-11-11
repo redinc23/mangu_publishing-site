@@ -17,19 +17,19 @@ resource "aws_ecs_cluster_capacity_providers" "main" {
 
   default_capacity_provider_strategy {
     capacity_provider = "FARGATE"
-    weight            = 1
-    base              = 1
+    weight            = 3
+    base              = 2
   }
 
   default_capacity_provider_strategy {
     capacity_provider = "FARGATE_SPOT"
-    weight            = 4
+    weight            = 2
   }
 }
 
 resource "aws_cloudwatch_log_group" "ecs_server" {
   name              = "/ecs/${var.project_name}-server-${var.environment}"
-  retention_in_days = 7
+  retention_in_days = 30
 
   tags = {
     Name = "${var.project_name}-server-logs-${var.environment}"
@@ -38,7 +38,7 @@ resource "aws_cloudwatch_log_group" "ecs_server" {
 
 resource "aws_cloudwatch_log_group" "ecs_client" {
   name              = "/ecs/${var.project_name}-client-${var.environment}"
-  retention_in_days = 7
+  retention_in_days = 30
 
   tags = {
     Name = "${var.project_name}-client-logs-${var.environment}"
@@ -79,14 +79,25 @@ resource "aws_iam_role_policy" "ecs_task_execution_secrets" {
       {
         Effect = "Allow"
         Action = [
-          "secretsmanager:GetSecretValue",
-          "kms:Decrypt"
+          "secretsmanager:GetSecretValue"
         ]
         Resource = [
           aws_secretsmanager_secret.db_credentials.arn,
           aws_secretsmanager_secret.redis_credentials.arn,
           aws_secretsmanager_secret.app_secrets.arn
         ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "kms:ViaService" = "secretsmanager.${var.aws_region}.amazonaws.com"
+          }
+        }
       }
     ]
   })
@@ -142,6 +153,30 @@ resource "aws_iam_role_policy" "ecs_task_s3" {
   })
 }
 
+resource "aws_iam_role_policy" "ecs_task_ses" {
+  name = "${var.project_name}-ecs-ses-${var.environment}"
+  role = aws_iam_role.ecs_task.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ses:SendEmail",
+          "ses:SendRawEmail"
+        ]
+        Resource = "*"
+        Condition = {
+          StringLike = {
+            "ses:FromAddress" = "*@${var.domain_name}"
+          }
+        }
+      }
+    ]
+  })
+}
+
 resource "aws_secretsmanager_secret" "app_secrets" {
   name        = "${var.project_name}-app-secrets-${var.environment}"
   description = "Application secrets for MANGU Publishing"
@@ -162,7 +197,7 @@ resource "aws_ecs_task_definition" "server" {
 
   container_definitions = jsonencode([{
     name  = "server"
-    image = "${aws_ecr_repository.server.repository_url}:latest"
+    image = "${aws_ecr_repository.server.repository_url}:${var.image_tag}"
     
     essential = true
     
@@ -179,6 +214,18 @@ resource "aws_ecs_task_definition" "server" {
       {
         name  = "PORT"
         value = "3000"
+      },
+      {
+        name  = "AWS_REGION"
+        value = var.aws_region
+      },
+      {
+        name  = "S3_UPLOADS_BUCKET"
+        value = aws_s3_bucket.uploads.id
+      },
+      {
+        name  = "CORS_ORIGIN"
+        value = "https://${var.domain_name},https://www.${var.domain_name}"
       }
     ]
     
@@ -194,6 +241,14 @@ resource "aws_ecs_task_definition" "server" {
       {
         name      = "JWT_SECRET"
         valueFrom = "${aws_secretsmanager_secret.app_secrets.arn}:jwt_secret::"
+      },
+      {
+        name      = "STRIPE_SECRET_KEY"
+        valueFrom = "${aws_secretsmanager_secret.app_secrets.arn}:stripe_secret_key::"
+      },
+      {
+        name      = "STRIPE_WEBHOOK_SECRET"
+        valueFrom = "${aws_secretsmanager_secret.app_secrets.arn}:stripe_webhook_secret::"
       }
     ]
     
@@ -207,7 +262,7 @@ resource "aws_ecs_task_definition" "server" {
     }
     
     healthCheck = {
-      command     = ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      command     = ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
       interval    = 30
       timeout     = 5
       retries     = 3
@@ -227,11 +282,10 @@ resource "aws_ecs_task_definition" "client" {
   cpu                     = var.ecs_client_cpu
   memory                  = var.ecs_client_memory
   execution_role_arn      = aws_iam_role.ecs_task_execution.arn
-  task_role_arn           = aws_iam_role.ecs_task.arn
 
   container_definitions = jsonencode([{
     name  = "client"
-    image = "${aws_ecr_repository.client.repository_url}:latest"
+    image = "${aws_ecr_repository.client.repository_url}:${var.image_tag}"
     
     essential = true
     
@@ -257,7 +311,7 @@ resource "aws_ecs_task_definition" "client" {
     }
     
     healthCheck = {
-      command     = ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+      command     = ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost/ || exit 1"]
       interval    = 30
       timeout     = 5
       retries     = 3
@@ -276,6 +330,8 @@ resource "aws_ecs_service" "server" {
   task_definition = aws_ecs_task_definition.server.arn
   desired_count   = 2
   launch_type     = "FARGATE"
+  
+  enable_execute_command = true
 
   network_configuration {
     subnets         = aws_subnet.private[*].id
@@ -290,12 +346,11 @@ resource "aws_ecs_service" "server" {
 
   deployment_configuration {
     maximum_percent         = 200
-    minimum_healthy_percent = 100
-  }
-
-  deployment_circuit_breaker {
-    enable   = true
-    rollback = true
+    minimum_healthy_percent = 50
+    deployment_circuit_breaker {
+      enable   = true
+      rollback = true
+    }
   }
 
   depends_on = [aws_lb_listener.https]
@@ -311,6 +366,8 @@ resource "aws_ecs_service" "client" {
   task_definition = aws_ecs_task_definition.client.arn
   desired_count   = 2
   launch_type     = "FARGATE"
+  
+  enable_execute_command = true
 
   network_configuration {
     subnets         = aws_subnet.private[*].id
@@ -325,12 +382,11 @@ resource "aws_ecs_service" "client" {
 
   deployment_configuration {
     maximum_percent         = 200
-    minimum_healthy_percent = 100
-  }
-
-  deployment_circuit_breaker {
-    enable   = true
-    rollback = true
+    minimum_healthy_percent = 50
+    deployment_circuit_breaker {
+      enable   = true
+      rollback = true
+    }
   }
 
   depends_on = [aws_lb_listener.https]
@@ -359,7 +415,193 @@ resource "aws_appautoscaling_policy" "server_cpu" {
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
-    target_value = 70.0
+    target_value       = 70.0
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 60
+  }
+}
+
+resource "aws_appautoscaling_policy" "server_memory" {
+  name               = "${var.project_name}-server-memory-${var.environment}"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.server.resource_id
+  scalable_dimension = aws_appautoscaling_target.server.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.server.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageMemoryUtilization"
+    }
+    target_value       = 80.0
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 60
+  }
+}
+
+resource "aws_appautoscaling_target" "client" {
+  max_capacity       = 6
+  min_capacity       = 2
+  resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.client.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "client_cpu" {
+  name               = "${var.project_name}-client-cpu-${var.environment}"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.client.resource_id
+  scalable_dimension = aws_appautoscaling_target.client.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.client.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    target_value       = 70.0
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 60
+  }
+}
+
+resource "aws_appautoscaling_policy" "client_memory" {
+  name               = "${var.project_name}-client-memory-${var.environment}"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.client.resource_id
+  scalable_dimension = aws_appautoscaling_target.client.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.client.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageMemoryUtilization"
+    }
+    target_value       = 80.0
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 60
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "server_cpu_high" {
+  alarm_name          = "${var.project_name}-server-cpu-high-${var.environment}"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ECS"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 85
+  alarm_description   = "Server CPU utilization is too high"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    ClusterName = aws_ecs_cluster.main.name
+    ServiceName = aws_ecs_service.server.name
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "server_memory_high" {
+  alarm_name          = "${var.project_name}-server-memory-high-${var.environment}"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "MemoryUtilization"
+  namespace           = "AWS/ECS"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 90
+  alarm_description   = "Server memory utilization is too high"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    ClusterName = aws_ecs_cluster.main.name
+    ServiceName = aws_ecs_service.server.name
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "server_task_count_low" {
+  alarm_name          = "${var.project_name}-server-task-count-low-${var.environment}"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "RunningTaskCount"
+  namespace           = "ECS/ContainerInsights"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 2
+  alarm_description   = "Server running task count is below desired"
+  treat_missing_data  = "breaching"
+
+  dimensions = {
+    ClusterName = aws_ecs_cluster.main.name
+    ServiceName = aws_ecs_service.server.name
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "client_cpu_high" {
+  alarm_name          = "${var.project_name}-client-cpu-high-${var.environment}"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ECS"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 85
+  alarm_description   = "Client CPU utilization is too high"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    ClusterName = aws_ecs_cluster.main.name
+    ServiceName = aws_ecs_service.client.name
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "alb_5xx_errors" {
+  alarm_name          = "${var.project_name}-alb-5xx-errors-${var.environment}"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "HTTPCode_Target_5XX_Count"
+  namespace           = "AWS/ApplicationELB"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 10
+  alarm_description   = "ALB 5xx errors are too high"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    LoadBalancer = aws_lb.main.arn_suffix
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "server_target_unhealthy" {
+  alarm_name          = "${var.project_name}-server-target-unhealthy-${var.environment}"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "HealthyHostCount"
+  namespace           = "AWS/ApplicationELB"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 1
+  alarm_description   = "Server target group has no healthy targets"
+  treat_missing_data  = "breaching"
+
+  dimensions = {
+    TargetGroup  = aws_lb_target_group.server.arn_suffix
+    LoadBalancer = aws_lb.main.arn_suffix
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "client_target_unhealthy" {
+  alarm_name          = "${var.project_name}-client-target-unhealthy-${var.environment}"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "HealthyHostCount"
+  namespace           = "AWS/ApplicationELB"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 1
+  alarm_description   = "Client target group has no healthy targets"
+  treat_missing_data  = "breaching"
+
+  dimensions = {
+    TargetGroup  = aws_lb_target_group.client.arn_suffix
+    LoadBalancer = aws_lb.main.arn_suffix
   }
 }
 

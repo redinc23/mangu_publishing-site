@@ -59,44 +59,22 @@ Write a 2-3 paragraph description that:
 - Is engaging and professional`;
 
     try {
-      const page = await this.client.pages.create({
-        parent: { database_id: this.databaseId },
-        properties: {
-          Title: {
-            title: [
-              {
-                text: {
-                  content: `AI Generated Description for: ${title}`
-                }
-              }
-            ]
-          }
-        },
-        children: [
-          {
-            object: 'block',
-            type: 'paragraph',
-            paragraph: {
-              rich_text: [
-                {
-                  type: 'text',
-                  text: {
-                    content: prompt
-                  }
-                }
-              ]
-            }
-          }
-        ]
-      });
-
+      // Generate description using AI helper (no page creation needed)
+      // In production, integrate with OpenAI/Anthropic or Notion's AI API
+      const description = await this.generateDescriptionWithAI(prompt);
+      
       return {
-        description: await this.generateDescriptionWithAI(prompt),
-        pageId: page.id
+        description,
+        pageId: null // No page created, just generated content
       };
     } catch (error) {
       console.error('Error generating book description:', error);
-      throw new Error(`Failed to generate description: ${error.message}`);
+      // Fallback: generate description without Notion API
+      const description = await this.generateDescriptionWithAI(prompt);
+      return {
+        description,
+        pageId: null
+      };
     }
   }
 
@@ -233,8 +211,7 @@ Make it:
 
     try {
       // Use search API to find pages in the database
-      // Note: This is a workaround since databases.query() may not be available
-      // In production, you might want to use a direct API call or update the client
+      // Note: The Notion client doesn't have databases.query in v5.4.0
       const response = await this.client.search({
         filter: {
           property: 'object',
@@ -252,9 +229,7 @@ Make it:
       return databasePages.map(page => this.parseNotionPage(page));
     } catch (error) {
       console.error('Error fetching books from Notion:', error);
-      // Fallback: return empty array if search fails
-      console.warn('Search API failed, returning empty array. Error:', error.message);
-      return [];
+      throw new Error(`Failed to fetch books: ${error.message}`);
     }
   }
 

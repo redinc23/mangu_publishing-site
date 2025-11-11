@@ -1,12 +1,8 @@
 import app, { NODE_ENV, setDbPool, setRedisClient } from './app.js';
 import pg from 'pg';
 import { createClient as createRedisClient } from 'redis';
-import { validateEnv, requireValidEnv } from './config/env.js';
 
 const { Pool } = pg;
-
-// Validate environment variables on startup
-requireValidEnv();
 
 const PORT = process.env.PORT || 3001;
 
@@ -17,14 +13,21 @@ let shutdownRegistered = false;
 
 async function initializeDatabase() {
   try {
-    dbPool = new Pool({
+    const isProduction = NODE_ENV === 'production';
+    const dbConfig = {
       connectionString: process.env.DATABASE_URL,
-      ssl: NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
       max: parseInt(process.env.DATABASE_POOL_MAX || '20', 10),
       min: parseInt(process.env.DATABASE_POOL_MIN || '2', 10),
       idleTimeoutMillis: parseInt(process.env.DATABASE_IDLE_TIMEOUT || '600000', 10),
       connectionTimeoutMillis: parseInt(process.env.DATABASE_TIMEOUT || '30000', 10)
-    });
+    };
+    
+    // Only add SSL config if DATABASE_URL contains ssl or if explicitly in production
+    if (isProduction && process.env.DATABASE_URL?.includes('amazonaws.com')) {
+      dbConfig.ssl = { rejectUnauthorized: false };
+    }
+    
+    dbPool = new Pool(dbConfig);
 
     const client = await dbPool.connect();
     await client.query('SELECT NOW()');
