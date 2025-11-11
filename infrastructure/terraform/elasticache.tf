@@ -51,8 +51,8 @@ resource "aws_elasticache_parameter_group" "redis" {
 }
 
 resource "aws_elasticache_replication_group" "main" {
-  replication_group_id       = "${var.project_name}-redis-${var.environment}"
-  replication_group_description = "Redis cluster for MANGU Publishing"
+  replication_group_id = "${var.project_name}-redis-${var.environment}"
+  description          = "Redis cluster for MANGU Publishing"
   
   engine               = "redis"
   engine_version       = "7.1"
@@ -66,8 +66,8 @@ resource "aws_elasticache_replication_group" "main" {
 
   at_rest_encryption_enabled = true
   transit_encryption_enabled = true
-  auth_token_enabled        = true
-  auth_token                = random_password.redis_auth_token.result
+  auth_token = random_password.redis_auth_token.result
+  transit_encryption_enabled = true
 
   automatic_failover_enabled = var.redis_num_cache_nodes > 1
   multi_az_enabled          = var.redis_num_cache_nodes > 1
