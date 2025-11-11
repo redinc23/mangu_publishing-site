@@ -66,8 +66,7 @@ resource "aws_elasticache_replication_group" "main" {
 
   at_rest_encryption_enabled = true
   transit_encryption_enabled = true
-  auth_token = random_password.redis_auth_token.result
-  transit_encryption_enabled = true
+  auth_token                 = random_password.redis_auth_token.result
 
   automatic_failover_enabled = var.redis_num_cache_nodes > 1
   multi_az_enabled          = var.redis_num_cache_nodes > 1
