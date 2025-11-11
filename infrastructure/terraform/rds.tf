@@ -41,33 +41,14 @@ resource "aws_db_parameter_group" "postgres" {
   family = "postgres16"
 
   parameter {
-    name  = "max_connections"
-    value = "200"
-  }
-
-  parameter {
-    name  = "shared_buffers"
-    value = "{DBInstanceClassMemory/32768}"
-  }
-
-  parameter {
-    name  = "effective_cache_size"
-    value = "{DBInstanceClassMemory/16384}"
-  }
-
-  parameter {
-    name  = "maintenance_work_mem"
-    value = "524288"
+    name         = "max_connections"
+    value        = "200"
+    apply_method = "pending-reboot"
   }
 
   parameter {
     name  = "checkpoint_completion_target"
     value = "0.9"
-  }
-
-  parameter {
-    name  = "wal_buffers"
-    value = "16384"
   }
 
   parameter {
