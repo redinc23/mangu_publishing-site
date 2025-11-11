@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MANGU Publishing - Production Deployment Action Plan</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            border-bottom: 4px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        h2 {
+            color: #2c3e50;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-left: 5px solid #3498db;
+            padding-left: 15px;
+        }
+        
+        h3 {
+            color: #34495e;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        h4 {
+            color: #555;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .badge-success {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .badge-warning {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .badge-danger {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .step-box {
+            background: #ecf0f1;
+            border-left: 5px solid #3498db;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .step-number {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            background: #3498db;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 40px;
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+        
+        code {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        table th {
+            background: #3498db;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+        
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .alert {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            border-left: 5px solid;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            border-color: #17a2b8;
+            color: #0c5460;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        
+        .link {
+            color: #3498db;
+            text-decoration: none;
+            border-bottom: 1px dashed #3498db;
+        }
+        
+        .link:hover {
+            color: #2980b9;
+            border-bottom: 1px solid #2980b9;
+        }
+        
+        .emoji {
+            font-size: 1.3em;
+            margin-right: 5px;
+        }
+        
+        .checklist {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        
+        .checklist li {
+            padding: 8px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+        
+        .checklist li:before {
+            content: "☐";
+            position: absolute;
+            left: 0;
+            font-size: 1.4em;
+            color: #3498db;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+            
+            .step-box {
+                page-break-inside: avoid;
+            }
+            
+            pre {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><span class="emoji">🚀</span>MANGU Publishing - Production Deployment Action Plan</h1>
+        
+        <div class="alert alert-success">
+            <strong>✅ Status:</strong> All 15 infrastructure fixes committed and pushed to GitHub!<br>
+            <strong>📦 Branch:</strong> <code>chore/ci-hardening-ops</code><br>
+            <strong>💰 Cost:</strong> $190-414/month<br>
+            <strong>⏱️ Time to Production:</strong> 52 minutes (mostly waiting)
+        </div>
+
+        <h2><span class="emoji">🎯</span>3-Step Action Plan</h2>
+
+        <div class="step-box">
+            <h3><span class="step-number">1</span>Create Pull Request <span class="badge-success">2 minutes</span></h3>
+            
+            <p><strong>Action:</strong> Click this link to create PR:</p>
+            <pre><code>https://github.com/redinc23/mangu_publishing-site/pull/new/chore/ci-hardening-ops</code></pre>
+            
+            <ol>
+                <li>Add title: "Complete production infrastructure fixes"</li>
+                <li>Review the changes (all 15 fixes are there)</li>
+                <li>Click "Create Pull Request"</li>
+                <li>Click "Merge" (or get someone to review first)</li>
+            </ol>
+        </div>
+
+        <div class="step-box">
+            <h3><span class="step-number">2</span>AWS Setup <span class="badge-warning">30-45 minutes</span></h3>
+            
+            <h4>A. Create ACM Certificate (20 min)</h4>
+            <ol>
+                <li>Go to <a href="https://console.aws.amazon.com/acm" class="link">AWS Certificate Manager</a></li>
+                <li>Click "Request certificate" → "Request a public certificate"</li>
+                <li>Enter your domain (e.g., <code>mangu-publishing.com</code>)</li>
+                <li>Choose "DNS validation"</li>
+                <li>Add the DNS records it gives you to your domain provider</li>
+                <li>Wait for status to show "Issued" (5-30 min)</li>
+                <li><strong>Copy the ARN</strong> (looks like: <code>arn:aws:acm:us-east-1:123456789:certificate/abc-123</code>)</li>
+            </ol>
+
+            <h4>B. Configure Terraform (5 min)</h4>
+            <pre><code>cd infrastructure/terraform
+cp terraform.tfvars.example terraform.tfvars
+nano terraform.tfvars  # or use any editor</code></pre>
+
+            <p>Add your values:</p>
+            <pre><code>aws_region      = "us-east-1"
+environment     = "production"
+project_name    = "mangu-publishing"
+domain_name     = "your-domain.com"
+certificate_arn = "arn:aws:acm:us-east-1:..." # from step A
+db_name         = "mangu"
+db_username     = "mangu_admin"</code></pre>
+
+            <h4>C. Deploy Infrastructure (20 min)</h4>
+            <pre><code>terraform init
+terraform plan  # Review what will be created
+terraform apply  # Type 'yes' when prompted</code></pre>
+
+            <p><strong>This creates:</strong></p>
+            <ul>
+                <li>VPC with subnets</li>
+                <li>RDS PostgreSQL (Multi-AZ)</li>
+                <li>Redis ElastiCache</li>
+                <li>ECS Fargate cluster</li>
+                <li>Application Load Balancer</li>
+                <li>S3 buckets</li>
+                <li>CloudFront CDN</li>
+                <li>CloudWatch monitoring</li>
+            </ul>
+
+            <h4>D. Populate Secrets (5 min)</h4>
+            <pre><code># Generate JWT secret
+aws secretsmanager put-secret-value \
+  --secret-id mangu-publishing-jwt-secret-production \
+  --secret-string "$(openssl rand -base64 64)"
+
+# Add Stripe keys (if you have them)
+aws secretsmanager put-secret-value \
+  --secret-id mangu-publishing-stripe-keys-production \
+  --secret-string '{"secret_key":"sk_live_xxx","webhook_secret":"whsec_xxx"}'</code></pre>
+        </div>
+
+        <div class="step-box">
+            <h3><span class="step-number">3</span>Deploy Application <span class="badge-success">AUTOMATIC!</span></h3>
+            
+            <p>Once Step 2 is done:</p>
+            <pre><code>git checkout main
+git pull origin main  # Get your merged PR
+git tag v1.0.0
+git push origin v1.0.0</code></pre>
+
+            <p><strong>GitHub Actions will automatically:</strong></p>
+            <ol>
+                <li>✅ Run tests (will fail if errors)</li>
+                <li>✅ Build Docker images</li>
+                <li>✅ Scan for vulnerabilities (Trivy)</li>
+                <li>✅ Push to ECR</li>
+                <li>✅ <strong>Run database migrations</strong></li>
+                <li>✅ Deploy to ECS</li>
+                <li>✅ Run smoke tests</li>
+                <li>✅ Auto-rollback if anything fails</li>
+            </ol>
+
+            <p>Watch progress: <a href="https://github.com/redinc23/mangu_publishing-site/actions" class="link">GitHub Actions</a></p>
+        </div>
+
+        <h2><span class="emoji">📊</span>Time & Cost Breakdown</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Step</th>
+                    <th>Time</th>
+                    <th>What You Do</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Create PR</td>
+                    <td>2 min</td>
+                    <td>Click, review, merge</td>
+                </tr>
+                <tr>
+                    <td>ACM Certificate</td>
+                    <td>20 min</td>
+                    <td>Click buttons, wait for DNS</td>
+                </tr>
+                <tr>
+                    <td>Configure Terraform</td>
+                    <td>5 min</td>
+                    <td>Edit one file</td>
+                </tr>
+                <tr>
+                    <td>Run Terraform</td>
+                    <td>20 min</td>
+                    <td>Run 3 commands, wait</td>
+                </tr>
+                <tr>
+                    <td>Populate Secrets</td>
+                    <td>5 min</td>
+                    <td>Copy-paste 2 commands</td>
+                </tr>
+                <tr>
+                    <td>Deploy App</td>
+                    <td>0 min</td>
+                    <td><strong>Automatic via GitHub Actions</strong></td>
+                </tr>
+                <tr style="background: #d4edda; font-weight: bold;">
+                    <td>TOTAL</td>
+                    <td>52 min</td>
+                    <td>Most is waiting</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Monthly Cost: $190-414</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Service</th>
+                    <th>Monthly Cost</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>ECS Fargate (2-10 tasks)</td>
+                    <td>$26-140</td>
+                </tr>
+                <tr>
+                    <td>RDS PostgreSQL Multi-AZ</td>
+                    <td>$50-80</td>
+                </tr>
+                <tr>
+                    <td>ElastiCache Redis</td>
+                    <td>$15-30</td>
+                </tr>
+                <tr>
+                    <td>NAT Gateway (2)</td>
+                    <td>$64</td>
+                </tr>
+                <tr>
+                    <td>Application Load Balancer</td>
+                    <td>$20-30</td>
+                </tr>
+                <tr>
+                    <td>CloudFront CDN</td>
+                    <td>$10-50</td>
+                </tr>
+                <tr>
+                    <td>S3 Storage</td>
+                    <td>$5-20</td>
+                </tr>
+                <tr style="background: #d4edda; font-weight: bold;">
+                    <td>TOTAL</td>
+                    <td>$190-414/month</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2><span class="emoji">✅</span>What You're Getting</h2>
+
+        <ul>
+            <li>✅ Multi-AZ PostgreSQL database (high availability)</li>
+            <li>✅ Redis caching cluster</li>
+            <li>✅ Auto-scaling ECS Fargate (2-10 tasks)</li>
+            <li>✅ Load balancer with SSL/TLS</li>
+            <li>✅ Global CDN (CloudFront)</li>
+            <li>✅ Automatic rollback on failures</li>
+            <li>✅ Zero-downtime deployments</li>
+            <li>✅ Comprehensive monitoring (CloudWatch)</li>
+            <li>✅ Database migrations in CI/CD</li>
+            <li>✅ Security scanning (Trivy)</li>
+            <li>✅ Encrypted secrets (AWS Secrets Manager)</li>
+            <li>✅ WAF protection with rate limiting</li>
+        </ul>
+
+        <h2><span class="emoji">✅</span>All 15 Fixes Applied</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Issue</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>Health endpoint exists</td>
+                    <td><span class="badge-success">EXISTS</span></td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>Tests fail build properly</td>
+                    <td><span class="badge-success">FIXED</span></td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>Rollback logic</td>
+                    <td><span class="badge-success">FIXED</span></td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>ECS configuration</td>
+                    <td><span class="badge-success">IMPROVED</span></td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td>RDS deletion protection</td>
+                    <td><span class="badge-success">CONDITIONAL</span></td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td>CloudWatch logs (30 days)</td>
+                    <td><span class="badge-success">UPGRADED</span></td>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td>Auto-scaling both services</td>
+                    <td><span class="badge-success">ADDED</span></td>
+                </tr>
+                <tr>
+                    <td>8</td>
+                    <td>Image versioning (tags)</td>
+                    <td><span class="badge-success">FIXED</span></td>
+                </tr>
+                <tr>
+                    <td>9</td>
+                    <td>Redis password (random)</td>
+                    <td><span class="badge-success">SECURE</span></td>
+                </tr>
+                <tr>
+                    <td>10</td>
+                    <td>PostgreSQL password</td>
+                    <td><span class="badge-success">SECURE</span></td>
+                </tr>
+                <tr>
+                    <td>11</td>
+                    <td>Migrations in CI/CD</td>
+                    <td><span class="badge-success">ADDED</span></td>
+                </tr>
+                <tr>
+                    <td>12</td>
+                    <td>Port 5173 conditional</td>
+                    <td><span class="badge-success">FIXED</span></td>
+                </tr>
+                <tr>
+                    <td>13</td>
+                    <td>App secrets docs</td>
+                    <td><span class="badge-success">DOCUMENTED</span></td>
+                </tr>
+                <tr>
+                    <td>14</td>
+                    <td>ACM certificate docs</td>
+                    <td><span class="badge-success">DOCUMENTED</span></td>
+                </tr>
+                <tr>
+                    <td>15</td>
+                    <td>CloudWatch alarms</td>
+                    <td><span class="badge-success">7 ADDED</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2><span class="emoji">🆘</span>If Something Goes Wrong</h2>
+
+        <div class="alert alert-warning">
+            <strong>All 15 critical issues are fixed, so this should work smoothly.</strong>
+        </div>
+
+        <h3>Common Issues & Solutions:</h3>
+
+        <h4>1. Terraform fails?</h4>
+        <p>Usually it's one of these:</p>
+        <ul>
+            <li>Missing ACM certificate ARN → Create certificate first</li>
+            <li>AWS credentials not configured → Run <code>aws configure</code></li>
+            <li>Region mismatch → Check terraform.tfvars</li>
+        </ul>
+
+        <h4>2. Deployment fails?</h4>
+        <p>ECS Circuit Breaker will auto-rollback. Check:</p>
+        <ul>
+            <li>CloudWatch logs: <code>/ecs/mangu-publishing-server-production</code></li>
+            <li>GitHub Actions output</li>
+            <li>ECS service events in AWS Console</li>
+        </ul>
+
+        <h4>3. Need help?</h4>
+        <p>Read these documents in your repo:</p>
+        <ul>
+            <li><code>INFRASTRUCTURE_FIXES_COMPLETE.md</code></li>
+            <li><code>DEPLOYMENT_CHECKLIST.md</code></li>
+            <li><code>docs/runbooks/troubleshooting.md</code></li>
+        </ul>
+
+        <h2><span class="emoji">📋</span>Quick Checklist</h2>
+
+        <ul class="checklist">
+            <li>Create and merge pull request</li>
+            <li>Create ACM certificate in AWS</li>
+            <li>Copy certificate ARN</li>
+            <li>Edit terraform.tfvars with your values</li>
+            <li>Run <code>terraform init</code></li>
+            <li>Run <code>terraform plan</code></li>
+            <li>Run <code>terraform apply</code></li>
+            <li>Populate JWT secret in Secrets Manager</li>
+            <li>Populate Stripe keys (if needed)</li>
+            <li>Tag v1.0.0 and push to trigger deployment</li>
+            <li>Monitor GitHub Actions</li>
+            <li>Verify deployment with smoke tests</li>
+        </ul>
+
+        <div class="alert alert-success">
+            <h3>🎉 TL;DR</h3>
+            <ol>
+                <li>Merge the PR on GitHub</li>
+                <li>Get ACM certificate from AWS (20 min)</li>
+                <li>Run <code>terraform apply</code> (20 min)</li>
+                <li>Add secrets to Secrets Manager (5 min)</li>
+                <li>Tag v1.0.0 and push → automatic deployment!</li>
+            </ol>
+            <p><strong>You're 52 minutes away from production. 🚀</strong></p>
+        </div>
+
+        <hr style="margin: 40px 0; border: 0; border-top: 2px solid #3498db;">
+
+        <p style="text-align: center; color: #7f8c8d; font-size: 0.9em;">
+            Generated: November 11, 2025<br>
+            MANGU Publishing Production Infrastructure<br>
+            All 15 critical issues resolved ✅
+        </p>
+    </div>
+</body>
+</html>
+

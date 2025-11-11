@@ -26,7 +26,8 @@
     "server"
   ],
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "vite": "^4.5.14"
   },
   "dependencies": {
     "@notionhq/client": "^5.4.0",
