@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './AdminPage.css';
 
-const API_BASE = 'http://localhost:5000/api/books';
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3002') + '/api/books';
 
 const formatNumber = (value) =>
   value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value.toString();

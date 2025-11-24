@@ -46,7 +46,8 @@ function CartPage() {
     const fetchRecommendations = async () => {
       setLoadingRecommendations(true);
       try {
-        const response = await fetch('http://localhost:5000/api/books/trending', {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002';
+        const response = await fetch(`${apiUrl}/api/books/trending`, {
           signal: controller.signal
         });
         if (!response.ok) {

@@ -18,7 +18,8 @@ function BookDetailsPage() {
   useEffect(() => {
     const fetchBook = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/books/${id}`);
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002';
+        const response = await fetch(`${apiUrl}/api/books/${id}`);
         const data = await response.json();
         setBook(data);
         setLoading(false);

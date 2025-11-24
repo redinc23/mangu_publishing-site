@@ -24,10 +24,11 @@ function HomePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002';
         const [featuredRes, trendingRes, releasesRes] = await Promise.all([
-          fetch('http://localhost:5000/api/books/featured'),
-          fetch('http://localhost:5000/api/books/trending'),
-          fetch('http://localhost:5000/api/books/new-releases')
+          fetch(`${apiUrl}/api/books/featured`),
+          fetch(`${apiUrl}/api/books/trending`),
+          fetch(`${apiUrl}/api/books`)
         ]);
 
         const featured = await featuredRes.json();
