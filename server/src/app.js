@@ -852,6 +852,30 @@ app.get('/api/categories', async (req, res) => {
     }
 });
 
+// Feature Flags and Config Endpoint
+app.get('/api/config', async (req, res) => {
+    try {
+        // Import feature flags dynamically
+        const featureFlagsModule = await import('./config/featureFlags.js');
+        const { getFeatureFlagsJSON, getBetaConfig } = featureFlagsModule.default;
+        
+        const config = {
+            features: getFeatureFlagsJSON(),
+            beta: getBetaConfig(),
+            environment: NODE_ENV,
+            version: process.env.APP_VERSION || '1.0.0',
+        };
+        
+        res.json(config);
+    } catch (error) {
+        console.error('Config endpoint error:', error);
+        res.status(500).json({ 
+            error: 'Failed to load configuration',
+            message: NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
+
 // Beta Feedback Endpoint
 app.post('/api/beta/feedback', express.json(), async (req, res) => {
     try {

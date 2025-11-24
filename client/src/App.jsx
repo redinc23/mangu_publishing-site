@@ -14,6 +14,7 @@ import SignInPage from './pages/SignInPage';
 import CartPage from './pages/CartPage';
 import AdminPage from './pages/AdminPage';
 import NotFoundPage from './pages/NotFoundPage';
+import BetaStatusPage from './pages/BetaStatusPage';
 
 // Main App component with routing
 function App() {
@@ -46,6 +47,7 @@ function App() {
         <Route path="terms" element={<NotFoundPage />} />
         <Route path="privacy" element={<NotFoundPage />} />
         <Route path="admin" element={<AdminPage />} />
+        <Route path="beta/status" element={<BetaStatusPage />} />
       </Route>
 
       {/* Auth routes without layout */}
