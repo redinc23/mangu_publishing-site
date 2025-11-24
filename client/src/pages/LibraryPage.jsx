@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { LibraryContext } from '../context/LibraryContext';
+import { booksApi, categoriesApi } from '../utils/api';
 import './LibraryPage.css';
 
 
@@ -24,22 +25,21 @@ function LibraryPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [trendingRes, releasesRes, topRatedRes, genresRes] = await Promise.all([
-          fetch('http://localhost:5000/api/books/trending'),
-          fetch('http://localhost:5000/api/books/new-releases'),
-          fetch('http://localhost:5000/api/books/top-rated'),
-          fetch('http://localhost:5000/api/books/all/genres')
+        const [trending, releases, rated, genreList] = await Promise.all([
+          booksApi.getTrending(),
+          booksApi.getAll(),
+          booksApi.getTrending(),
+          categoriesApi.getAll()
         ]);
 
-        const trending = await trendingRes.json();
-        const releases = await releasesRes.json();
-        const rated = await topRatedRes.json();
-        const genreList = await genresRes.json();
-
-        setTrendingBooks(trending);
-        setNewReleases(releases);
-        setTopRated(rated);
-        setGenres(['All', ...genreList]);
+        setTrendingBooks(Array.isArray(trending) ? trending : []);
+        setNewReleases(Array.isArray(releases) ? releases : []);
+        setTopRated(Array.isArray(rated) ? rated : []);
+        // Handle genres - API returns objects with name property
+        const genreNames = Array.isArray(genreList)
+          ? genreList.map(g => typeof g === 'string' ? g : g.name).filter(Boolean)
+          : [];
+        setGenres(['All', ...genreNames]);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching library data:', error);

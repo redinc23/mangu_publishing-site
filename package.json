@@ -4,9 +4,11 @@
   "description": "MANGU PUBLISHING - Stream Unlimited Books",
   "main": "index.js",
   "scripts": {
+    "predev": "node scripts/check-env.js",
     "dev": "concurrently \"yarn workspace mangu-server dev\" \"yarn workspace mangu-client dev\"",
     "build": "yarn workspace mangu-client build",
-    "start": "yarn workspace mangu-server start"
+    "start": "yarn workspace mangu-server start",
+    "check-env": "node scripts/check-env.js"
   },
   "keywords": [],
   "author": "",

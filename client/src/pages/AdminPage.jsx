@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { booksApi } from '../utils/api';
 import './AdminPage.css';
-
-const API_BASE = 'http://localhost:5000/api/books';
 
 const formatNumber = (value) =>
   value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value.toString();
@@ -40,43 +39,37 @@ function AdminPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const controller = new AbortController();
+    let isCancelled = false;
 
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        const [trendingRes, newRes, topRes] = await Promise.all([
-          fetch(`${API_BASE}/trending`, { signal: controller.signal }),
-          fetch(`${API_BASE}/new-releases`, { signal: controller.signal }),
-          fetch(`${API_BASE}/top-rated`, { signal: controller.signal })
-        ]);
-
-        if (!trendingRes.ok || !newRes.ok || !topRes.ok) {
-          throw new Error('Failed to load dashboard data');
-        }
-
         const [trendingData, newData, topData] = await Promise.all([
-          trendingRes.json(),
-          newRes.json(),
-          topRes.json()
+          booksApi.getTrending(),
+          booksApi.getAll(),
+          booksApi.getTrending()
         ]);
 
-        setTrendingBooks(trendingData);
-        setNewReleases(newData);
-        setTopRated(topData);
-        setError('');
+        if (!isCancelled) {
+          setTrendingBooks(Array.isArray(trendingData) ? trendingData : []);
+          setNewReleases(Array.isArray(newData) ? newData : []);
+          setTopRated(Array.isArray(topData) ? topData : []);
+          setError('');
+        }
       } catch (err) {
-        if (err.name !== 'AbortError') {
+        if (!isCancelled) {
           console.error('Admin dashboard error:', err);
           setError('Unable to load analytics. Please try again shortly.');
         }
       } finally {
-        setLoading(false);
+        if (!isCancelled) {
+          setLoading(false);
+        }
       }
     };
 
     fetchDashboardData();
-    return () => controller.abort();
+    return () => { isCancelled = true; };
   }, []);
 
   const allBooks = useMemo(() => {

@@ -13,6 +13,7 @@ import ProfilePage from './pages/ProfilePage';
 import SignInPage from './pages/SignInPage';
 import CartPage from './pages/CartPage';
 import AdminPage from './pages/AdminPage';
+import AudiobookPlayerPage from './pages/AudiobookPlayerPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 // Main App component with routing
@@ -24,6 +25,7 @@ function App() {
         <Route index element={<HomePage />} />
         <Route path="library" element={<LibraryPage />} />
         <Route path="audiobooks" element={<LibraryPage />} />
+        <Route path="audiobooks/:id" element={<AudiobookPlayerPage />} />
         <Route path="videos" element={<LibraryPage />} />
         <Route path="magazines" element={<LibraryPage />} />
         <Route path="podcasts" element={<LibraryPage />} />

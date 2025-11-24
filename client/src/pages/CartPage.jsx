@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
+import { booksApi } from '../utils/api';
 import './CartPage.css';
 
 const PROMO_CODES = {
@@ -42,29 +43,27 @@ function CartPage() {
   const isCartEmpty = !cartItems || cartItems.length === 0;
 
   useEffect(() => {
-    const controller = new AbortController();
+    let isCancelled = false;
     const fetchRecommendations = async () => {
       setLoadingRecommendations(true);
       try {
-        const response = await fetch('http://localhost:5000/api/books/trending', {
-          signal: controller.signal
-        });
-        if (!response.ok) {
-          throw new Error('Failed to load recommendations');
+        const data = await booksApi.getTrending(6);
+        if (!isCancelled) {
+          setRecommendations(Array.isArray(data) ? data.slice(0, 6) : []);
         }
-        const data = await response.json();
-        setRecommendations(data.slice(0, 6));
       } catch (error) {
-        if (error.name !== 'AbortError') {
+        if (!isCancelled) {
           console.error('Error loading recommendations:', error);
         }
       } finally {
-        setLoadingRecommendations(false);
+        if (!isCancelled) {
+          setLoadingRecommendations(false);
+        }
       }
     };
 
     fetchRecommendations();
-    return () => controller.abort();
+    return () => { isCancelled = true; };
   }, []);
 
   const totals = useMemo(() => {

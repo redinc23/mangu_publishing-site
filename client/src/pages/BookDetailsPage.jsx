@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { LibraryContext } from '../context/LibraryContext';
+import { booksApi } from '../utils/api';
 import './BookDetailsPage.css';
 
 function BookDetailsPage() {
@@ -18,8 +19,7 @@ function BookDetailsPage() {
   useEffect(() => {
     const fetchBook = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/books/${id}`);
-        const data = await response.json();
+        const data = await booksApi.getById(id);
         setBook(data);
         setLoading(false);
       } catch (error) {

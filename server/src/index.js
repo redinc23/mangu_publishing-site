@@ -11,7 +11,159 @@ let redisClient = null;
 let serverInstance = null;
 let shutdownRegistered = false;
 
+// Mock data for development when database is unavailable
+const MOCK_BOOKS = [
+  {
+    id: '550e8400-e29b-41d4-a716-446655440001',
+    title: 'The Great Adventure',
+    description: 'An epic journey through unknown lands filled with mystery and wonder.',
+    price_cents: 1999,
+    rating: 4.5,
+    rating_count: 128,
+    cover_image_url: 'https://picsum.photos/seed/book1/300/450',
+    publication_date: '2024-01-15',
+    is_featured: true,
+    is_new_release: true,
+    is_active: true,
+    view_count: 1500,
+    authors: ['Jane Smith'],
+    categories: ['Adventure', 'Fiction']
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440002',
+    title: 'Mystery of the Deep',
+    description: 'A thrilling mystery that will keep you on the edge of your seat.',
+    price_cents: 1499,
+    rating: 4.2,
+    rating_count: 89,
+    cover_image_url: 'https://picsum.photos/seed/book2/300/450',
+    publication_date: '2024-02-20',
+    is_featured: false,
+    is_new_release: true,
+    is_active: true,
+    view_count: 980,
+    authors: ['John Doe'],
+    categories: ['Mystery', 'Thriller']
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440003',
+    title: 'Science of Tomorrow',
+    description: 'Exploring the frontiers of scientific discovery and innovation.',
+    price_cents: 2499,
+    rating: 4.8,
+    rating_count: 256,
+    cover_image_url: 'https://picsum.photos/seed/book3/300/450',
+    publication_date: '2024-03-10',
+    is_featured: false,
+    is_new_release: false,
+    is_active: true,
+    view_count: 2100,
+    authors: ['Dr. Emily Chen'],
+    categories: ['Science', 'Non-Fiction']
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440004',
+    title: 'Love in Paris',
+    description: 'A romantic tale set in the beautiful streets of Paris.',
+    price_cents: 1299,
+    rating: 4.0,
+    rating_count: 67,
+    cover_image_url: 'https://picsum.photos/seed/book4/300/450',
+    publication_date: '2024-04-05',
+    is_featured: false,
+    is_new_release: true,
+    is_active: true,
+    view_count: 750,
+    authors: ['Marie Laurent'],
+    categories: ['Romance', 'Fiction']
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440005',
+    title: 'The Dark Forest',
+    description: 'A spine-chilling horror novel that will haunt your dreams.',
+    price_cents: 1799,
+    rating: 4.6,
+    rating_count: 145,
+    cover_image_url: 'https://picsum.photos/seed/book5/300/450',
+    publication_date: '2024-05-12',
+    is_featured: false,
+    is_new_release: false,
+    is_active: true,
+    view_count: 1200,
+    authors: ['Stephen Dark'],
+    categories: ['Horror', 'Fiction']
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440006',
+    title: 'Business Mastery',
+    description: 'Learn the secrets of successful entrepreneurs and business leaders.',
+    price_cents: 2999,
+    rating: 4.3,
+    rating_count: 92,
+    cover_image_url: 'https://picsum.photos/seed/book6/300/450',
+    publication_date: '2024-06-01',
+    is_featured: false,
+    is_new_release: false,
+    is_active: true,
+    view_count: 890,
+    authors: ['Robert Business'],
+    categories: ['Business', 'Self-Help']
+  }
+];
+
+const MOCK_CATEGORIES = [
+  { id: 1, name: 'Fiction', slug: 'fiction', is_active: true, sort_order: 1, book_count: 3 },
+  { id: 2, name: 'Non-Fiction', slug: 'non-fiction', is_active: true, sort_order: 2, book_count: 2 },
+  { id: 3, name: 'Mystery', slug: 'mystery', is_active: true, sort_order: 3, book_count: 1 },
+  { id: 4, name: 'Romance', slug: 'romance', is_active: true, sort_order: 4, book_count: 1 },
+  { id: 5, name: 'Science', slug: 'science', is_active: true, sort_order: 5, book_count: 1 },
+  { id: 6, name: 'Horror', slug: 'horror', is_active: true, sort_order: 6, book_count: 1 },
+  { id: 7, name: 'Adventure', slug: 'adventure', is_active: true, sort_order: 7, book_count: 1 },
+  { id: 8, name: 'Thriller', slug: 'thriller', is_active: true, sort_order: 8, book_count: 1 }
+];
+
+function createDatabaseStub() {
+  return {
+    query: async (queryStr, params) => {
+      if (queryStr.includes('SELECT NOW()') || queryStr.includes('SELECT 1')) {
+        return { rows: [{ now: new Date() }] };
+      }
+      if (queryStr.includes('FROM books') && queryStr.includes('is_featured = true')) {
+        const featured = MOCK_BOOKS.find(b => b.is_featured);
+        return { rows: featured ? [featured] : [], rowCount: featured ? 1 : 0 };
+      }
+      if (queryStr.includes('FROM books') && queryStr.includes('WHERE b.id = $1')) {
+        const book = MOCK_BOOKS.find(b => b.id === params[0]);
+        return { rows: book ? [book] : [], rowCount: book ? 1 : 0 };
+      }
+      if (queryStr.includes('FROM books')) {
+        const limit = params?.[0] || 20;
+        const offset = params?.[1] || 0;
+        return { rows: MOCK_BOOKS.slice(offset, offset + limit), rowCount: MOCK_BOOKS.length };
+      }
+      if (queryStr.includes('FROM categories')) {
+        return { rows: MOCK_CATEGORIES, rowCount: MOCK_CATEGORIES.length };
+      }
+      return { rows: [], rowCount: 0 };
+    },
+    connect: async () => ({
+      query: async () => ({ rows: [{ now: new Date() }] }),
+      release: () => {}
+    }),
+    end: async () => {}
+  };
+}
+
 async function initializeDatabase() {
+  const disableDatabase = process.env.DISABLE_DATABASE === '1';
+
+  if (disableDatabase) {
+    dbPool = createDatabaseStub();
+    setDbPool(dbPool);
+    console.log('ℹ️  Database disabled via DISABLE_DATABASE=1 (using mock data)');
+    return true;
+  }
+
   try {
     dbPool = new Pool({
       connectionString: process.env.DATABASE_URL,
@@ -31,12 +183,10 @@ async function initializeDatabase() {
     return true;
   } catch (error) {
     console.error('❌ PostgreSQL connection failed:', error.message);
-    setDbPool(null);
-    if (dbPool) {
-      await dbPool.end().catch(() => {});
-      dbPool = null;
-    }
-    return false;
+    console.log('ℹ️  Falling back to mock data');
+    dbPool = createDatabaseStub();
+    setDbPool(dbPool);
+    return true;
   }
 }
 
