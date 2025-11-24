@@ -31,6 +31,7 @@
     "dev:nocache": "cross-env DISABLE_REDIS=1 npx nodemon --watch src --ext js --exec 'node --inspect=0.0.0.0:9229 src/index.js'"
   },
   "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.936.0",
     "@aws-sdk/client-dynamodb": "^3.919.0",
     "@aws-sdk/client-s3": "^3.919.0",
     "@aws-sdk/client-ses": "^3.919.0",
@@ -46,6 +47,7 @@
     "express-validator": "^7.0.1",
     "helmet": "^7.0.0",
     "joi": "^17.9.2",
+    "jose": "^6.1.2",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
