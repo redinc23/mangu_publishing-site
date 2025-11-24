@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { LibraryContext } from '../context/LibraryContext';
+import { booksApi } from '../utils/api';
 import './HomePage.css';
 
 function HomePage() {
@@ -24,20 +25,15 @@ function HomePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002';
-        const [featuredRes, trendingRes, releasesRes] = await Promise.all([
-          fetch(`${apiUrl}/api/books/featured`),
-          fetch(`${apiUrl}/api/books/trending`),
-          fetch(`${apiUrl}/api/books`)
+        const [featured, trending, releases] = await Promise.all([
+          booksApi.getFeatured(),
+          booksApi.getTrending(),
+          booksApi.getAll()
         ]);
 
-        const featured = await featuredRes.json();
-        const trending = await trendingRes.json();
-        const releases = await releasesRes.json();
-
         setFeaturedBook(featured);
-        setTrendingBooks(trending);
-        setNewReleases(releases);
+        setTrendingBooks(Array.isArray(trending) ? trending : []);
+        setNewReleases(Array.isArray(releases) ? releases : []);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching homepage data:', error);

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { LibraryContext } from '../context/LibraryContext';
+import { booksApi, categoriesApi } from '../utils/api';
 import './LibraryPage.css';
 
 
@@ -24,18 +25,12 @@ function LibraryPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002';
-        const [trendingRes, releasesRes, topRatedRes, genresRes] = await Promise.all([
-          fetch(`${apiUrl}/api/books/trending`),
-          fetch(`${apiUrl}/api/books`),
-          fetch(`${apiUrl}/api/books/trending`),
-          fetch(`${apiUrl}/api/categories`)
+        const [trending, releases, rated, genreList] = await Promise.all([
+          booksApi.getTrending(),
+          booksApi.getAll(),
+          booksApi.getTrending(),
+          categoriesApi.getAll()
         ]);
-
-        const trending = await trendingRes.json();
-        const releases = await releasesRes.json();
-        const rated = await topRatedRes.json();
-        const genreList = await genresRes.json();
 
         setTrendingBooks(Array.isArray(trending) ? trending : []);
         setNewReleases(Array.isArray(releases) ? releases : []);
