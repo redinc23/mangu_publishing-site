@@ -217,13 +217,9 @@ function SignInPage() {
           <label className="remember">
             <input type="checkbox" /> Remember me
           </label>
-          <button
-            type="button"
-            className="link-button"
-            onClick={() => console.info('Password reset flow coming soon.')}
-          >
+          <Link to="/reset-password" className="link-button" style={{ background: 'none', border: 'none', padding: 0, color: 'inherit' }}>
             Forgot password?
-          </button>
+          </Link>
         </div>
         <button type="submit" className="auth-submit" disabled={loading}>
           {loading ? 'Signing in…' : 'Sign in'}

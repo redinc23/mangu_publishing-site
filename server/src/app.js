@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { formatBook } from './utils/formatBook.js';
 import { normalizeAuthors } from './utils/normalizeAuthors.js';
+import authRoutes from './routes/auth.js';
 
 // Load environment variables
 dotenv.config();
@@ -273,6 +274,9 @@ app.get('/api/health', async (req, res) => {
 app.get('/health', (req, res) => {
     res.status(200).send('OK');
 });
+
+// Auth routes
+app.use('/api/auth', authRoutes);
 
 // Books API with enhanced error handling and caching
 app.get('/api/books', async (req, res) => {

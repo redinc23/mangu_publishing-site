@@ -15,6 +15,8 @@ import CartPage from './pages/CartPage';
 import AdminPage from './pages/AdminPage';
 import NotFoundPage from './pages/NotFoundPage';
 import BetaStatusPage from './pages/BetaStatusPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 
 // Main App component with routing
 function App() {
@@ -53,6 +55,8 @@ function App() {
       {/* Auth routes without layout */}
       <Route path="signin" element={<SignInPage />} />
       <Route path="signup" element={<SignInPage />} />
+      <Route path="reset-password" element={<ResetPasswordPage />} />
+      <Route path="verify-email" element={<VerifyEmailPage />} />
 
       {/* 404 catch-all */}
       <Route path="*" element={<NotFoundPage />} />
