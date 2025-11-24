@@ -320,6 +320,32 @@ FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_reviews_updated_at BEFORE UPDATE ON reviews
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- Beta Feedback table for internal beta testing
+CREATE TABLE IF NOT EXISTS beta_feedback (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    feedback TEXT NOT NULL,
+    url TEXT,
+    user_agent TEXT,
+    ip_address INET,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Add constraint to ensure feedback is not empty
+    CONSTRAINT feedback_not_empty CHECK (length(trim(feedback)) > 0)
+);
+
+-- Create index for querying by date
+CREATE INDEX IF NOT EXISTS idx_beta_feedback_created_at ON beta_feedback(created_at DESC);
+
+-- Create index for URL analysis
+CREATE INDEX IF NOT EXISTS idx_beta_feedback_url ON beta_feedback(url) WHERE url IS NOT NULL;
+
+-- Add comments
+COMMENT ON TABLE beta_feedback IS 'Stores feedback from internal beta testers';
+COMMENT ON COLUMN beta_feedback.feedback IS 'User feedback text (max 5000 chars)';
+COMMENT ON COLUMN beta_feedback.url IS 'URL where feedback was submitted from';
+COMMENT ON COLUMN beta_feedback.user_agent IS 'Browser user agent string';
+COMMENT ON COLUMN beta_feedback.ip_address IS 'IP address for analytics';
+
 -- Insert initial sample data
 DO $$
 BEGIN

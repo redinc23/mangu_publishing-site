@@ -852,6 +852,64 @@ app.get('/api/categories', async (req, res) => {
     }
 });
 
+// Beta Feedback Endpoint
+app.post('/api/beta/feedback', express.json(), async (req, res) => {
+    try {
+        const { feedback, url, timestamp } = req.body;
+        
+        if (!feedback || typeof feedback !== 'string') {
+            return res.status(400).json({ error: 'Feedback is required' });
+        }
+
+        // Log feedback to console in development
+        if (NODE_ENV === 'development' || NODE_ENV === 'beta') {
+            console.log('=== BETA FEEDBACK ===');
+            console.log('Time:', timestamp || new Date().toISOString());
+            console.log('URL:', url || 'Not provided');
+            console.log('Feedback:', feedback);
+            console.log('IP:', req.ip);
+            console.log('User-Agent:', req.get('User-Agent'));
+            console.log('=====================');
+        }
+
+        // Store in database if available
+        const dbPool = req.app.locals.db;
+        if (dbPool) {
+            try {
+                await dbPool.query(
+                    `INSERT INTO beta_feedback (feedback, url, user_agent, ip_address, created_at)
+                     VALUES ($1, $2, $3, $4, $5)`,
+                    [
+                        feedback.substring(0, 5000), // Limit feedback length
+                        url || null,
+                        req.get('User-Agent') || null,
+                        req.ip || null,
+                        timestamp || new Date().toISOString()
+                    ]
+                );
+            } catch (dbError) {
+                // Log error but don't fail the request
+                console.error('Failed to store feedback in database:', dbError.message);
+            }
+        }
+
+        // TODO: In production, also send to monitoring service (e.g., Sentry, Slack webhook)
+        // Example:
+        // await sendToSlack({ feedback, url, timestamp });
+
+        res.json({ 
+            success: true, 
+            message: 'Thank you for your feedback!' 
+        });
+    } catch (error) {
+        console.error('Beta feedback error:', error);
+        res.status(500).json({ 
+            error: 'Failed to submit feedback',
+            message: NODE_ENV === 'development' ? error.message : 'Please try again later'
+        });
+    }
+});
+
 // Enhanced error handling middleware
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', {
