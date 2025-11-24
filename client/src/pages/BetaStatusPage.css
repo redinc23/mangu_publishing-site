@@ -1,0 +1,282 @@
+.beta-status-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.beta-status-header {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+.beta-status-header h1 {
+    font-size: 36px;
+    margin: 0 0 8px 0;
+    color: #333;
+}
+
+.beta-status-header p {
+    font-size: 18px;
+    color: #666;
+    margin: 0;
+}
+
+.beta-status-loading {
+    text-align: center;
+    padding: 48px;
+    font-size: 18px;
+    color: #666;
+}
+
+.beta-status-section {
+    background: white;
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.beta-status-section h2 {
+    margin: 0 0 16px 0;
+    font-size: 24px;
+    color: #333;
+}
+
+/* Status Grid */
+.status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.status-card {
+    background: #f8f9fa;
+    padding: 16px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.status-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: #666;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.status-value {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+}
+
+.status-value.env-development {
+    color: #2196F3;
+}
+
+.status-value.env-beta {
+    color: #9C27B0;
+}
+
+.status-value.env-production {
+    color: #4CAF50;
+}
+
+.status-value.status-active {
+    color: #4CAF50;
+}
+
+.status-value.status-inactive {
+    color: #999;
+}
+
+.status-value.status-healthy {
+    color: #4CAF50;
+}
+
+.status-value.status-degraded {
+    color: #FF9800;
+}
+
+.status-value.status-critical,
+.status-value.status-unhealthy {
+    color: #F44336;
+}
+
+/* Service List */
+.service-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.service-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+
+.service-name {
+    font-weight: 500;
+    text-transform: capitalize;
+    color: #333;
+}
+
+.service-status {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 12px;
+}
+
+.service-status.status-healthy {
+    background: #E8F5E9;
+    color: #2E7D32;
+}
+
+.service-status.status-disconnected,
+.service-status.status-unhealthy {
+    background: #FFEBEE;
+    color: #C62828;
+}
+
+/* Feature Grid */
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.feature-badge {
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.feature-enabled {
+    background: #E8F5E9;
+    color: #2E7D32;
+    border: 2px solid #4CAF50;
+}
+
+.feature-disabled {
+    background: #FAFAFA;
+    color: #999;
+    border: 2px solid #E0E0E0;
+}
+
+.empty-state {
+    color: #999;
+    font-style: italic;
+    margin: 0;
+}
+
+/* Beta Info */
+.beta-info {
+    padding: 16px;
+    background: #F3E5F5;
+    border-radius: 6px;
+    border-left: 4px solid #9C27B0;
+}
+
+.beta-info p {
+    margin: 8px 0;
+    color: #333;
+}
+
+.beta-info strong {
+    color: #7B1FA2;
+}
+
+/* Resource Grid */
+.resource-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+.resource-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.resource-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.resource-card h3 {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+}
+
+.resource-card p {
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+/* System Info */
+.system-info details {
+    cursor: pointer;
+}
+
+.system-info summary {
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    font-weight: 500;
+    user-select: none;
+}
+
+.system-info summary:hover {
+    background: #e9ecef;
+}
+
+.system-info pre {
+    margin: 16px 0 0 0;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .beta-status-page {
+        padding: 16px;
+    }
+
+    .beta-status-header h1 {
+        font-size: 28px;
+    }
+
+    .beta-status-header p {
+        font-size: 16px;
+    }
+
+    .status-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .feature-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .resource-grid {
+        grid-template-columns: 1fr;
+    }
+}

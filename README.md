@@ -2,6 +2,17 @@
 
 A modern, scalable publishing platform built with React, Node.js, PostgreSQL, and Redis.
 
+## 🎯 Internal Beta Testing
+
+**Beta testers**: Start here! 👇
+- 📖 [Internal Beta Guide](docs/INTERNAL_BETA_GUIDE.md) - Complete setup and testing guide
+- ⚡ [Quick Reference](docs/BETA_QUICK_REFERENCE.md) - Fast access to key info
+- ✅ [Testing Script](docs/BETA_TESTING_SCRIPT.md) - Structured testing checklist
+- 🐛 [Known Issues](docs/KNOWN_ISSUES.md) - Current bugs and workarounds
+- 🔧 [Troubleshooting](docs/TROUBLESHOOTING.md) - Fix common problems
+
+**Beta Status Dashboard**: http://localhost:5173/beta/status
+
 ## 🚀 Quick Start
 
 ```bash
