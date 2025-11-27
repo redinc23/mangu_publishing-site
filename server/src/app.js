@@ -8,6 +8,10 @@ import { formatBook } from './utils/formatBook.js';
 import { normalizeAuthors } from './utils/normalizeAuthors.js';
 import authRoutes from './routes/auth.js';
 import usersRoutes from './routes/users.js';
+import stripeRoutes from './payments/stripe.routes.js';
+import cartRoutes from './features/cart/cart.router.js';
+import libraryRoutes from './features/library/library.router.js';
+import authorsRoutes from './features/authors/authors.router.js';
 
 // Load environment variables
 dotenv.config();
@@ -158,6 +162,9 @@ if (NODE_ENV === 'development') {
 // Performance middleware
 app.use(compression());
 
+// Mount Stripe webhook BEFORE express.json() (webhook needs raw body for signature verification)
+app.use('/api/stripe', stripeRoutes);
+
 // Body parsing with size limits
 app.use(express.json({ 
     limit: process.env.MAX_FILE_SIZE || '10mb',
@@ -281,6 +288,15 @@ app.use('/api/auth', authRoutes);
 
 // User routes
 app.use('/api/users', usersRoutes);
+
+// Cart routes
+app.use('/api/cart', cartRoutes);
+
+// Library routes
+app.use('/api/library', libraryRoutes);
+
+// Authors routes
+app.use('/api/authors', authorsRoutes);
 
 // Books API with enhanced error handling and caching
 app.get('/api/books', async (req, res) => {
