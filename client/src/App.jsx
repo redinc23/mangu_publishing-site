@@ -1,5 +1,6 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import './App.css';
 
 // Layout
@@ -21,9 +22,37 @@ import VerifyEmailPage from './pages/VerifyEmailPage';
 // Main App component with routing
 function App() {
   return (
-    <Routes>
-      {/* Public routes with layout */}
-      <Route path="/" element={<Layout />}>
+    <>
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#181818',
+            color: '#fff',
+            borderRadius: '8px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            padding: '12px 20px',
+            fontSize: '14px',
+            fontWeight: '500',
+          },
+          success: {
+            iconTheme: {
+              primary: '#46d369',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ff6b6b',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
+      <Routes>
+        {/* Public routes with layout */}
+        <Route path="/" element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path="library" element={<LibraryPage />} />
         <Route path="audiobooks" element={<LibraryPage />} />
@@ -61,6 +90,7 @@ function App() {
       {/* 404 catch-all */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+    </>
   );
 }
 
