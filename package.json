@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "echo \"No tests\" && exit 0",
+    "smoke-test": "node scripts/smoke_test.js",
     "setup-notion": "node scripts/setup-notion.js",
     "setup-notion-auto": "node scripts/auto-setup-notion.js",
     "complete-notion": "node scripts/complete-notion-setup.js",
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^5.1.1",
     "concurrently": "^8.2.2",
+    "node-fetch": "^2.7.0",
     "rollup-plugin-visualizer": "^6.0.5",
     "vite": "^7.2.4",
     "yarn": "^1.22.22"

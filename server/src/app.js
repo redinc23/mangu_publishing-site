@@ -231,6 +231,27 @@ app.use('/api/', (req, res, next) => {
 app.use('/api', healthRouter);
 app.use('/', healthRouter);
 
+// Test error endpoint (development only)
+if (NODE_ENV === 'development') {
+    app.post('/api/test-error', (req, res) => {
+        const error = new Error('Test Backend Error - This is a test error for Sentry monitoring');
+        error.test = true;
+        logger.error('Test error triggered', { test: true });
+        
+        if (process.env.SENTRY_DSN) {
+            Sentry.captureException(error, {
+                tags: { test: true },
+                extra: { timestamp: new Date().toISOString() }
+            });
+        }
+        
+        res.status(500).json({ 
+            error: 'Test error sent to Sentry',
+            message: error.message 
+        });
+    });
+}
+
 // Payments routes (Stripe checkout)
 app.use('/api/payments', paymentsRouter);
 

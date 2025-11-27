@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useMockSessionStore } from '../state/useMockSessionStore';
+import analytics from '../lib/analytics';
 
 const DEMO_EMAIL = 'reader@mangu.studio';
 const USE_MOCK_AUTH = !import.meta.env.VITE_AWS_REGION || !import.meta.env.VITE_COGNITO_USER_POOL_ID;
@@ -42,6 +43,8 @@ export default function SignInPageV2() {
         // Mock auth flow
         const result = mockAuth.signIn({ email: email.trim(), name });
         if (result.success) {
+          analytics.trackSignIn('mock');
+          analytics.identify(result.user.email);
           setMessage(`Signed in as ${result.user.name}. Redirecting to the library…`);
           setTimeout(() => navigate('/library'), 700);
         } else {
@@ -56,6 +59,8 @@ export default function SignInPageV2() {
         }
         const result = await auth.signIn(email.trim(), password);
         if (result.success) {
+          analytics.trackSignIn('cognito');
+          analytics.identify(email.trim());
           setMessage('Signed in successfully. Redirecting…');
           setTimeout(() => navigate('/library'), 700);
         } else {

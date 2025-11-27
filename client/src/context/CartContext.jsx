@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import { getBookById } from '../data/mockBooks';
 import { apiClient } from '../lib/api';
+import analytics from '../lib/analytics';
 
 const STORAGE_KEY = 'mangu-cart';
 
@@ -104,6 +105,17 @@ export const CartProvider = ({ children }) => {
 
   const addToCart = useCallback((bookId, bookData = null) => {
     if (!bookId) return;
+    
+    // Track analytics
+    const book = bookData || getBookById(bookId);
+    if (book) {
+      analytics.trackAddToCart(
+        bookId,
+        book.title || 'Unknown',
+        (book.price_cents || 0) / 100
+      );
+    }
+    
     setEntries((prev) => {
       const existing = prev.find((item) => item.bookId === bookId);
       if (existing) {

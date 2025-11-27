@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import './App.css';
 import { usePageTracking } from './hooks/usePageTracking';
+import DevErrorTest from './components/DevErrorTest';
 
 // Layout
 import Layout from './components/layout/Layout';
@@ -131,6 +132,9 @@ function App() {
       {/* 404 catch-all */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+    
+    {/* Dev Error Testing (only in development) */}
+    <DevErrorTest />
   );
 }
 

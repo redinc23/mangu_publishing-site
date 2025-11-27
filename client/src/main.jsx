@@ -8,6 +8,8 @@ import { LibraryProvider } from './context/LibraryContext'
 import { ToastProvider } from './components/ui'
 import { register } from './lib/serviceWorkerRegistration'
 import { setupFocusVisible } from './lib/a11y'
+import './lib/sentry'
+import { captureException } from './lib/sentry'
 
 // Error boundary for the entire app
 class ErrorBoundary extends React.Component {
@@ -22,11 +24,9 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('App Error:', error, errorInfo);
-
-    // In production, you might want to send this to an error reporting service
-    if (import.meta.env.PROD && import.meta.env.VITE_SENTRY_DSN) {
-      // Sentry.captureException(error);
-    }
+    
+    // Send error to Sentry
+    captureException(error, { errorInfo });
   }
 
   render() {
