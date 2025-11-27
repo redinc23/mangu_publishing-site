@@ -142,7 +142,7 @@ export function validateEnv(env = process.env.NODE_ENV) {
 export function getConfig() {
   return {
     env: process.env.NODE_ENV || 'development',
-    port: parseInt(process.env.PORT || '3001', 10),
+    port: parseInt(process.env.PORT || '3009', 10),
     
     database: {
       url: process.env.DATABASE_URL,
@@ -183,7 +183,7 @@ export function getConfig() {
     },
     
     cors: {
-      origin: process.env.CLIENT_URL || 'http://localhost:5173'
+      origin: process.env.CLIENT_URL || 'http://localhost:5179'
     },
     
     logging: {

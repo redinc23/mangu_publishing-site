@@ -3,8 +3,9 @@ AGENT RUNBOOK — One-shot setup & verification
 This file provides a compact, copy-pasteable set of steps an automated agent or human can run to bring up a full local environment, apply migrations, seed data, and run tests.
 
 Prerequisites
-- Docker & Docker Compose
 - Node.js 18+, npm or yarn
+- PostgreSQL 16+ (via Homebrew: `brew install postgresql@16`)
+- Redis (via Homebrew: `brew install redis`)
 - `scripts/credentials/local.sh` created and loaded (or `scripts/launch_credentials.sh`)
 
 One-shot sequence (safe defaults)
@@ -18,11 +19,20 @@ npm --prefix server install
 npm --prefix client install
 ```
 
-2) Load credentials and start dev services (Postgres, Redis, Adminer, MailHog)
+2) Load credentials and start dev services (Postgres, Redis)
 
 ```bash
 source scripts/launch_credentials.sh
-./start-dev.sh
+
+# Start PostgreSQL and Redis via Homebrew
+brew services start postgresql@16
+brew services start redis
+
+# Create database if it doesn't exist
+createdb mangu_db 2>/dev/null || true
+
+# Ensure DATABASE_URL is set in local.sh
+# export DATABASE_URL="postgresql://localhost:5432/mangu_db"
 ```
 
 3) Wait for DB/Redis to be ready (optional manual wait)
@@ -60,7 +70,7 @@ cd server && npm run dev
 
 ```bash
 # Health
-curl http://localhost:5000/api/health
+curl http://localhost:3001/api/health
 # Unit tests (server)
 npm --prefix server run test
 # Unit tests (client)

@@ -20,7 +20,7 @@ function Header() {
           <div className="logo-icon">
             <span className="logo-m">M</span>
           </div>
-          <span>LANGU</span>
+          <span>MANGU</span>
         </Link>
 
         <nav className="nav-main">
@@ -31,8 +31,8 @@ function Header() {
             Library
           </Link>
           <Link
-            to="/audiobooks"
-            className={`nav-button ${isActive('/audiobooks') ? 'active' : ''}`}
+            to="/audiobooks/audio-1"
+            className={`nav-button ${isActive('/audiobooks/audio-1') ? 'active' : ''}`}
           >
             Audio
           </Link>

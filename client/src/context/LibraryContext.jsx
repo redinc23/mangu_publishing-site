@@ -1,38 +1,77 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState
+} from 'react';
+import { getBookById } from '../data/mockBooks';
 
-export const LibraryContext = createContext();
+const STORAGE_KEY = 'mangu-library';
+const isBrowser = typeof window !== 'undefined';
+
+const parseStoredIds = (rawValue) => {
+  if (!rawValue) return [];
+  try {
+    const parsed = JSON.parse(rawValue);
+    return Array.isArray(parsed)
+      ? parsed.filter((id) => typeof id === 'string')
+      : [];
+  } catch (error) {
+    console.warn('[library] Failed to parse saved list', error);
+    return [];
+  }
+};
+
+const loadInitialIds = () => {
+  if (!isBrowser) return [];
+  return parseStoredIds(window.localStorage.getItem(STORAGE_KEY));
+};
+
+export const LibraryContext = createContext({
+  libraryItems: [],
+  addToLibrary: () => {},
+  removeFromLibrary: () => {},
+  isInLibrary: () => false
+});
 
 export const LibraryProvider = ({ children }) => {
-  const [libraryItems, setLibraryItems] = useState([]);
+  const [libraryIds, setLibraryIds] = useState(loadInitialIds);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/library')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setLibraryItems(data);
-        }
-      })
-      .catch(err => console.error('Failed to load library', err));
+    if (!isBrowser) return;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(libraryIds));
+  }, [libraryIds]);
+
+  const libraryItems = useMemo(
+    () => libraryIds.map((id) => getBookById(id)).filter(Boolean),
+    [libraryIds]
+  );
+
+  const addToLibrary = useCallback((bookId) => {
+    if (!bookId) return;
+    setLibraryIds((prev) => (prev.includes(bookId) ? prev : [...prev, bookId]));
   }, []);
 
-  const addToLibrary = (bookId) => {
-    fetch('http://localhost:5000/api/library/add', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bookId })
-    })
-      .then(res => res.json())
-      .then(updatedLibrary => {
-        setLibraryItems(updatedLibrary);
-      })
-      .catch(err => console.error('Add to library failed', err));
-  };
+  const removeFromLibrary = useCallback((bookId) => {
+    setLibraryIds((prev) => prev.filter((id) => id !== bookId));
+  }, []);
+
+  const isInLibrary = useCallback(
+    (bookId) => libraryIds.includes(bookId),
+    [libraryIds]
+  );
 
   const value = {
     libraryItems,
-    addToLibrary
+    addToLibrary,
+    removeFromLibrary,
+    isInLibrary
   };
 
-  return <LibraryContext.Provider value={value}>{children}</LibraryContext.Provider>;
+  return (
+    <LibraryContext.Provider value={value}>
+      {children}
+    </LibraryContext.Provider>
+  );
 };

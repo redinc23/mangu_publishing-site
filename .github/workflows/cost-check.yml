@@ -1,0 +1,237 @@
+name: Cost Budget Check
+
+on:
+  schedule:
+    # Run daily at 9 AM UTC
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'infrastructure/terraform/**'
+      - '.github/workflows/cost-check.yml'
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  cost-check:
+    name: Check AWS Budget Status
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Get current month spend
+        id: spend
+        run: |
+          MONTH_START=$(date -u +"%Y-%m-01")
+          TODAY=$(date -u +"%Y-%m-%d")
+          
+          CURRENT_SPEND=$(aws ce get-cost-and-usage \
+            --time-period Start="${MONTH_START}",End="${TODAY}" \
+            --granularity MONTHLY \
+            --metrics BlendedCost \
+            --query 'ResultsByTime[0].Total.BlendedCost.Amount' \
+            --output text)
+          
+          BUDGET_LIMIT=500
+          SPEND_PERCENTAGE=$(echo "scale=1; ($CURRENT_SPEND / $BUDGET_LIMIT) * 100" | bc)
+          
+          echo "current_spend=${CURRENT_SPEND}" >> $GITHUB_OUTPUT
+          echo "budget_limit=${BUDGET_LIMIT}" >> $GITHUB_OUTPUT
+          echo "spend_percentage=${SPEND_PERCENTAGE}" >> $GITHUB_OUTPUT
+          
+          # Check if over 80%
+          if (( $(echo "$SPEND_PERCENTAGE > 80" | bc -l) )); then
+            echo "status=critical" >> $GITHUB_OUTPUT
+          elif (( $(echo "$SPEND_PERCENTAGE > 60" | bc -l) )); then
+            echo "status=warning" >> $GITHUB_OUTPUT
+          else
+            echo "status=ok" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get top services by cost
+        id: services
+        run: |
+          MONTH_START=$(date -u +"%Y-%m-01")
+          TODAY=$(date -u +"%Y-%m-%d")
+          
+          TOP_SERVICES=$(aws ce get-cost-and-usage \
+            --time-period Start="${MONTH_START}",End="${TODAY}" \
+            --granularity MONTHLY \
+            --metrics BlendedCost \
+            --group-by Type=DIMENSION,Key=SERVICE \
+            --query 'ResultsByTime[0].Groups[].[Keys[0], Total.BlendedCost.Amount]' \
+            --output text | \
+            sort -k2 -nr | \
+            head -5 | \
+            awk '{printf "- **%s**: $%.2f\\n", $1, $2}')
+          
+          echo "top_services<<EOF" >> $GITHUB_OUTPUT
+          echo "$TOP_SERVICES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Check for cost anomalies
+        id: anomalies
+        run: |
+          ANOMALIES=$(aws ce get-anomalies --max-results 5 \
+            --query 'Anomalies[?AnomalyScore.MaxScore > `10`].[AnomalyStartDate, RootCauses[0].Service, Impact.TotalImpact, AnomalyScore.MaxScore]' \
+            --output text)
+          
+          if [ -n "$ANOMALIES" ] && [ "$ANOMALIES" != "None" ]; then
+            ANOMALY_LIST=$(echo "$ANOMALIES" | awk '{printf "- **%s** - %s: Impact $%.2f (Score: %.1f)\\n", $1, $2, $3, $4}')
+            echo "has_anomalies=true" >> $GITHUB_OUTPUT
+            echo "anomaly_list<<EOF" >> $GITHUB_OUTPUT
+            echo "$ANOMALY_LIST" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "has_anomalies=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment on PR with cost info
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = '${{ steps.spend.outputs.status }}';
+            const currentSpend = '${{ steps.spend.outputs.current_spend }}';
+            const budgetLimit = '${{ steps.spend.outputs.budget_limit }}';
+            const spendPercentage = '${{ steps.spend.outputs.spend_percentage }}';
+            const topServices = `${{ steps.services.outputs.top_services }}`;
+            const hasAnomalies = '${{ steps.anomalies.outputs.has_anomalies }}' === 'true';
+            const anomalyList = `${{ steps.anomalies.outputs.anomaly_list }}`;
+            
+            let emoji = '✅';
+            let statusText = 'On Track';
+            let color = 'green';
+            
+            if (status === 'critical') {
+              emoji = '🔴';
+              statusText = 'CRITICAL - Over 80%';
+              color = 'red';
+            } else if (status === 'warning') {
+              emoji = '⚠️';
+              statusText = 'Warning - Over 60%';
+              color = 'yellow';
+            }
+            
+            let body = `## ${emoji} AWS Cost Budget Status\n\n`;
+            body += `**Status**: ${statusText}\n`;
+            body += `**Current Spend**: $${currentSpend}\n`;
+            body += `**Monthly Budget**: $${budgetLimit}\n`;
+            body += `**Usage**: ${spendPercentage}%\n\n`;
+            
+            body += `### Top 5 Services by Cost\n\n${topServices}\n\n`;
+            
+            if (hasAnomalies) {
+              body += `### ⚠️ Cost Anomalies Detected\n\n${anomalyList}\n\n`;
+            }
+            
+            if (status === 'critical') {
+              body += `### 🚨 Action Required\n\n`;
+              body += `Budget is over 80%. Please review:\n`;
+              body += `- Review ECS task counts and scale if needed\n`;
+              body += `- Check CloudWatch cost dashboard\n`;
+              body += `- Verify no runaway processes\n\n`;
+            } else if (status === 'warning') {
+              body += `### ℹ️ Recommendations\n\n`;
+              body += `- Monitor spend trends closely\n`;
+              body += `- Consider optimization opportunities\n`;
+              body += `- Review [Cost Optimization Guide](../docs/COST_MONITORING_GUIDE.md)\n\n`;
+            }
+            
+            body += `---\n`;
+            body += `*Updated: ${new Date().toISOString()}*\n`;
+            body += `*Run \`./scripts/cost-optimization.sh\` for detailed analysis*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+      - name: Create issue if budget critical
+        if: steps.spend.outputs.status == 'critical' && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const currentSpend = '${{ steps.spend.outputs.current_spend }}';
+            const budgetLimit = '${{ steps.spend.outputs.budget_limit }}';
+            const spendPercentage = '${{ steps.spend.outputs.spend_percentage }}';
+            const topServices = `${{ steps.services.outputs.top_services }}`;
+            
+            const title = `🔴 CRITICAL: AWS Budget at ${spendPercentage}%`;
+            
+            let body = `## Budget Alert\n\n`;
+            body += `The AWS monthly budget has exceeded 80% threshold.\n\n`;
+            body += `**Current Spend**: $${currentSpend}\n`;
+            body += `**Monthly Budget**: $${budgetLimit}\n`;
+            body += `**Usage**: ${spendPercentage}%\n\n`;
+            body += `### Top Services\n\n${topServices}\n\n`;
+            body += `### Immediate Actions\n\n`;
+            body += `1. Review [Cost Dashboard](https://console.aws.amazon.com/cost-management/home)\n`;
+            body += `2. Run cost analysis: \`./scripts/cost-optimization.sh\`\n`;
+            body += `3. Scale down non-essential resources\n`;
+            body += `4. Check for anomalies and misconfigured services\n\n`;
+            body += `### Resources\n\n`;
+            body += `- [Cost Monitoring Guide](docs/COST_MONITORING_GUIDE.md)\n`;
+            body += `- [AWS Cost Explorer](https://console.aws.amazon.com/cost-management/home)\n`;
+            
+            // Check if issue already exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'cost-alert'
+            });
+            
+            if (issues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['cost-alert', 'critical', 'infrastructure']
+              });
+            }
+
+      - name: Send summary
+        run: |
+          echo "## AWS Cost Budget Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Current Spend**: \$${{ steps.spend.outputs.current_spend }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Monthly Budget**: \$${{ steps.spend.outputs.budget_limit }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Usage**: ${{ steps.spend.outputs.spend_percentage }}%" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.spend.outputs.status }}" == "critical" ]; then
+            echo "🔴 **STATUS: CRITICAL - Action Required**" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.spend.outputs.status }}" == "warning" ]; then
+            echo "⚠️ **STATUS: Warning - Monitor Closely**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ **STATUS: On Track**" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Top Services" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.services.outputs.top_services }}" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.anomalies.outputs.has_anomalies }}" == "true" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### ⚠️ Cost Anomalies" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "${{ steps.anomalies.outputs.anomaly_list }}" >> $GITHUB_STEP_SUMMARY
+          fi

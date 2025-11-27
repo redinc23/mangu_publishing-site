@@ -1,10 +1,13 @@
-import React from 'react'
+import React, { Suspense, lazy } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import './index.css'
 import { CartProvider } from './context/CartContext'
 import { LibraryProvider } from './context/LibraryContext'
+import { ToastProvider } from './components/ui'
+import { register } from './lib/serviceWorkerRegistration'
+import { setupFocusVisible } from './lib/a11y'
 
 // Error boundary for the entire app
 class ErrorBoundary extends React.Component {
@@ -85,12 +88,29 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>
       <BrowserRouter>
-        <CartProvider>
-          <LibraryProvider>
-            <App />
-          </LibraryProvider>
-        </CartProvider>
+        <ToastProvider>
+          <CartProvider>
+            <LibraryProvider>
+              <App />
+            </LibraryProvider>
+          </CartProvider>
+        </ToastProvider>
       </BrowserRouter>
     </ErrorBoundary>
   </React.StrictMode>,
 )
+
+// Register service worker for PWA functionality
+if (import.meta.env.PROD) {
+  register({
+    onSuccess: (registration) => {
+      console.log('[PWA] Service Worker registered successfully');
+    },
+    onUpdate: (registration) => {
+      console.log('[PWA] New content available, please refresh');
+    }
+  });
+}
+
+// Setup focus-visible polyfill for accessibility
+setupFocusVisible();

@@ -46,7 +46,7 @@ test_api_endpoint() {
     local expected_status="${2:-200}"
     
     local response
-    response=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:5000$endpoint" 2>/dev/null || echo "000")
+    response=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:3001$endpoint" 2>/dev/null || echo "000")
     
     [ "$response" = "$expected_status" ]
 }
@@ -148,14 +148,14 @@ main() {
     
     # API tests (if server is running)
     echo "🌐 API Tests:"
-    if curl -s "http://localhost:5000/api/health" >/dev/null 2>&1; then
+    if curl -s "http://localhost:3001/api/health" >/dev/null 2>&1; then
         run_test "Server health endpoint responds" "test_api_endpoint '/api/health' 200"
         run_test "Books featured endpoint works" "test_api_endpoint '/api/books/featured'"
         run_test "Books trending endpoint works" "test_api_endpoint '/api/books/trending'"
         run_test "Categories endpoint works" "test_api_endpoint '/api/categories'"
         run_test "404 handler works" "test_api_endpoint '/api/nonexistent' 404"
     else
-        log_warning "Server not running on port 5000 (start with: cd server && npm run dev)"
+        log_warning "Server not running on port 3001 (start with: cd server && npm run dev)"
     fi
     
     echo ""
@@ -236,7 +236,7 @@ main() {
     echo "   Start all:        ./start-all.sh"
     echo "   Start client:     ./start-client.sh"
     echo "   Start server:     ./start-server.sh"
-    echo "   Health check:     curl http://localhost:5000/api/health"
+    echo "   Health check:     curl http://localhost:3001/api/health"
 }
 
 main "$@"

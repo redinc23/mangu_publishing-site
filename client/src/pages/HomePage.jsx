@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { LibraryContext } from '../context/LibraryContext';
+import { apiClient } from '../lib/api.js';
 import './HomePage.css';
 
 function HomePage() {
@@ -22,29 +23,35 @@ function HomePage() {
 
   // Fetch data from API
   useEffect(() => {
+    let isMounted = true;
+
     const fetchData = async () => {
       try {
-        const [featuredRes, trendingRes, releasesRes] = await Promise.all([
-          fetch('http://localhost:3001/api/books/featured'),
-          fetch('http://localhost:3001/api/books/trending'),
-          fetch('http://localhost:3001/api/books?limit=20')
+        const [featured, trending, releases] = await Promise.all([
+          apiClient.books.featured().catch(() => null),
+          apiClient.books.trending({ limit: 10 }).catch(() => []),
+          apiClient.books.list({ limit: 20 }).catch(() => [])
         ]);
 
-        const featured = await featuredRes.json();
-        const trending = await trendingRes.json();
-        const releases = await releasesRes.json();
+        if (!isMounted) return;
 
         setFeaturedBook(featured);
-        setTrendingBooks(trending);
-        setNewReleases(releases);
-        setLoading(false);
+        setTrendingBooks(Array.isArray(trending) ? trending : []);
+        setNewReleases(Array.isArray(releases) ? releases : []);
       } catch (error) {
         console.error('Error fetching homepage data:', error);
-        setLoading(false);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Scroll effects

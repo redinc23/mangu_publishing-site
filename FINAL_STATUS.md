@@ -52,14 +52,15 @@ source scripts/credentials/local.sh
 
 ### Dev Environment
 ```bash
-# 1. Ensure Docker is running
-docker --version
+# 1. Start database services
+brew services start postgresql@16
+brew services start redis
 
-# 2. Start dependencies
-./start-dev.sh
+# 2. Start development servers (or use npm run dev from root)
+npm run dev
 
-# 3. In separate terminals:
-npm --prefix server run dev    # API: http://localhost:5000
+# Or in separate terminals:
+npm --prefix server run dev    # API: http://localhost:3001
 npm --prefix client run dev    # UI: http://localhost:5173
 ```
 

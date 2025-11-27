@@ -1,0 +1,21 @@
+{
+  "name": "ui-auto-improver-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "LLM-backed agent that reviews UI diffs and submits improvement PRs.",
+  "main": "run.js",
+  "scripts": {
+    "start": "node run.js",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@octokit/rest": "^20.1.1",
+    "dotenv": "^16.4.5",
+    "openai": "^4.39.0",
+    "simple-git": "^3.22.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0"
+  }
+}

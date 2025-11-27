@@ -12,18 +12,18 @@ resource "aws_ecs_cluster" "main" {
 }
 
 resource "aws_ecs_cluster_capacity_providers" "main" {
-  cluster_name = aws_ecs_cluster.main.name
+  cluster_name       = aws_ecs_cluster.main.name
   capacity_providers = ["FARGATE", "FARGATE_SPOT"]
 
   default_capacity_provider_strategy {
     capacity_provider = "FARGATE"
-    weight            = 3
+    weight            = 1
     base              = 2
   }
 
   default_capacity_provider_strategy {
     capacity_provider = "FARGATE_SPOT"
-    weight            = 2
+    weight            = 4
   }
 }
 
@@ -189,23 +189,23 @@ resource "aws_secretsmanager_secret" "app_secrets" {
 resource "aws_ecs_task_definition" "server" {
   family                   = "${var.project_name}-server-${var.environment}"
   requires_compatibilities = ["FARGATE"]
-  network_mode            = "awsvpc"
-  cpu                     = var.ecs_server_cpu
-  memory                  = var.ecs_server_memory
-  execution_role_arn      = aws_iam_role.ecs_task_execution.arn
-  task_role_arn           = aws_iam_role.ecs_task.arn
+  network_mode             = "awsvpc"
+  cpu                      = var.ecs_server_cpu
+  memory                   = var.ecs_server_memory
+  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn
 
   container_definitions = jsonencode([{
     name  = "server"
     image = "${aws_ecr_repository.server.repository_url}:${var.image_tag}"
-    
+
     essential = true
-    
+
     portMappings = [{
       containerPort = 3000
       protocol      = "tcp"
     }]
-    
+
     environment = [
       {
         name  = "NODE_ENV"
@@ -224,11 +224,15 @@ resource "aws_ecs_task_definition" "server" {
         value = aws_s3_bucket.uploads.id
       },
       {
-        name  = "CORS_ORIGIN"
+        name  = "CORS_ORIGINS"
         value = "https://${var.domain_name},https://www.${var.domain_name}"
+      },
+      {
+        name  = "CLIENT_URL"
+        value = "https://${var.domain_name}"
       }
     ]
-    
+
     secrets = [
       {
         name      = "DATABASE_URL"
@@ -251,7 +255,7 @@ resource "aws_ecs_task_definition" "server" {
         valueFrom = "${aws_secretsmanager_secret.app_secrets.arn}:stripe_webhook_secret::"
       }
     ]
-    
+
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -260,7 +264,7 @@ resource "aws_ecs_task_definition" "server" {
         "awslogs-stream-prefix" = "ecs"
       }
     }
-    
+
     healthCheck = {
       command     = ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
       interval    = 30
@@ -278,29 +282,29 @@ resource "aws_ecs_task_definition" "server" {
 resource "aws_ecs_task_definition" "client" {
   family                   = "${var.project_name}-client-${var.environment}"
   requires_compatibilities = ["FARGATE"]
-  network_mode            = "awsvpc"
-  cpu                     = var.ecs_client_cpu
-  memory                  = var.ecs_client_memory
-  execution_role_arn      = aws_iam_role.ecs_task_execution.arn
+  network_mode             = "awsvpc"
+  cpu                      = var.ecs_client_cpu
+  memory                   = var.ecs_client_memory
+  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
 
   container_definitions = jsonencode([{
     name  = "client"
     image = "${aws_ecr_repository.client.repository_url}:${var.image_tag}"
-    
+
     essential = true
-    
+
     portMappings = [{
       containerPort = 80
       protocol      = "tcp"
     }]
-    
+
     environment = [
       {
         name  = "VITE_API_URL"
-        value = "https://api.${var.domain_name}"
+        value = "https://${var.domain_name}/api"
       }
     ]
-    
+
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -309,7 +313,7 @@ resource "aws_ecs_task_definition" "client" {
         "awslogs-stream-prefix" = "ecs"
       }
     }
-    
+
     healthCheck = {
       command     = ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost/ || exit 1"]
       interval    = 30
@@ -330,7 +334,7 @@ resource "aws_ecs_service" "server" {
   task_definition = aws_ecs_task_definition.server.arn
   desired_count   = 2
   launch_type     = "FARGATE"
-  
+
   enable_execute_command = true
 
   network_configuration {
@@ -346,7 +350,7 @@ resource "aws_ecs_service" "server" {
 
   deployment_maximum_percent         = 200
   deployment_minimum_healthy_percent = 50
-  
+
   deployment_circuit_breaker {
     enable   = true
     rollback = true
@@ -365,7 +369,7 @@ resource "aws_ecs_service" "client" {
   task_definition = aws_ecs_task_definition.client.arn
   desired_count   = 2
   launch_type     = "FARGATE"
-  
+
   enable_execute_command = true
 
   network_configuration {
@@ -381,7 +385,7 @@ resource "aws_ecs_service" "client" {
 
   deployment_maximum_percent         = 200
   deployment_minimum_healthy_percent = 50
-  
+
   deployment_circuit_breaker {
     enable   = true
     rollback = true
@@ -413,9 +417,9 @@ resource "aws_appautoscaling_policy" "server_cpu" {
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
-    target_value       = 70.0
-    scale_in_cooldown  = 300
-    scale_out_cooldown = 60
+    target_value       = 65.0
+    scale_in_cooldown  = 600
+    scale_out_cooldown = 120
   }
 }
 
@@ -430,9 +434,9 @@ resource "aws_appautoscaling_policy" "server_memory" {
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageMemoryUtilization"
     }
-    target_value       = 80.0
-    scale_in_cooldown  = 300
-    scale_out_cooldown = 60
+    target_value       = 75.0
+    scale_in_cooldown  = 600
+    scale_out_cooldown = 120
   }
 }
 
@@ -455,9 +459,9 @@ resource "aws_appautoscaling_policy" "client_cpu" {
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
-    target_value       = 70.0
-    scale_in_cooldown  = 300
-    scale_out_cooldown = 60
+    target_value       = 65.0
+    scale_in_cooldown  = 600
+    scale_out_cooldown = 120
   }
 }
 
@@ -472,9 +476,83 @@ resource "aws_appautoscaling_policy" "client_memory" {
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageMemoryUtilization"
     }
-    target_value       = 80.0
-    scale_in_cooldown  = 300
-    scale_out_cooldown = 60
+    target_value       = 75.0
+    scale_in_cooldown  = 600
+    scale_out_cooldown = 120
+  }
+}
+
+resource "aws_appautoscaling_policy" "server_request_count" {
+  name               = "${var.project_name}-server-request-count-${var.environment}"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.server.resource_id
+  scalable_dimension = aws_appautoscaling_target.server.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.server.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ALBRequestCountPerTarget"
+      resource_label         = "${aws_lb.main.arn_suffix}/${aws_lb_target_group.server.arn_suffix}"
+    }
+    target_value       = 1000.0
+    scale_in_cooldown  = 600
+    scale_out_cooldown = 120
+  }
+}
+
+resource "aws_appautoscaling_scheduled_action" "server_scale_up_morning" {
+  name               = "${var.project_name}-server-scale-up-morning-${var.environment}"
+  service_namespace  = aws_appautoscaling_target.server.service_namespace
+  resource_id        = aws_appautoscaling_target.server.resource_id
+  scalable_dimension = aws_appautoscaling_target.server.scalable_dimension
+  schedule           = "cron(0 13 * * ? *)"
+  timezone           = "UTC"
+
+  scalable_target_action {
+    min_capacity = 3
+    max_capacity = 10
+  }
+}
+
+resource "aws_appautoscaling_scheduled_action" "server_scale_down_evening" {
+  name               = "${var.project_name}-server-scale-down-evening-${var.environment}"
+  service_namespace  = aws_appautoscaling_target.server.service_namespace
+  resource_id        = aws_appautoscaling_target.server.resource_id
+  scalable_dimension = aws_appautoscaling_target.server.scalable_dimension
+  schedule           = "cron(0 2 * * ? *)"
+  timezone           = "UTC"
+
+  scalable_target_action {
+    min_capacity = 2
+    max_capacity = 10
+  }
+}
+
+resource "aws_appautoscaling_scheduled_action" "client_scale_up_morning" {
+  name               = "${var.project_name}-client-scale-up-morning-${var.environment}"
+  service_namespace  = aws_appautoscaling_target.client.service_namespace
+  resource_id        = aws_appautoscaling_target.client.resource_id
+  scalable_dimension = aws_appautoscaling_target.client.scalable_dimension
+  schedule           = "cron(0 13 * * ? *)"
+  timezone           = "UTC"
+
+  scalable_target_action {
+    min_capacity = 3
+    max_capacity = 6
+  }
+}
+
+resource "aws_appautoscaling_scheduled_action" "client_scale_down_evening" {
+  name               = "${var.project_name}-client-scale-down-evening-${var.environment}"
+  service_namespace  = aws_appautoscaling_target.client.service_namespace
+  resource_id        = aws_appautoscaling_target.client.resource_id
+  scalable_dimension = aws_appautoscaling_target.client.scalable_dimension
+  schedule           = "cron(0 2 * * ? *)"
+  timezone           = "UTC"
+
+  scalable_target_action {
+    min_capacity = 2
+    max_capacity = 6
   }
 }
 

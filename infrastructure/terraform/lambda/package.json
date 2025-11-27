@@ -1,0 +1,9 @@
+{
+  "name": "cache-invalidation",
+  "version": "1.0.0",
+  "description": "CloudFront cache invalidation Lambda function",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-cloudfront": "^3.0.0"
+  }
+}

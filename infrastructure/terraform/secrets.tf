@@ -81,6 +81,18 @@ resource "aws_secretsmanager_secret" "cognito_config" {
   }
 }
 
+resource "aws_secretsmanager_secret" "sentry_dsn" {
+  name        = "${var.project_name}-sentry-dsn-${var.environment}"
+  description = "Sentry DSN for error monitoring"
+
+  recovery_window_in_days = 7
+
+  tags = {
+    Name        = "${var.project_name}-sentry-dsn"
+    Environment = var.environment
+  }
+}
+
 # IAM policy for ECS tasks to read secrets
 resource "aws_iam_policy" "ecs_secrets_access" {
   name        = "${var.project_name}-ecs-secrets-access-${var.environment}"
@@ -100,7 +112,8 @@ resource "aws_iam_policy" "ecs_secrets_access" {
           aws_secretsmanager_secret.redis_url.arn,
           aws_secretsmanager_secret.jwt_secret.arn,
           aws_secretsmanager_secret.stripe_keys.arn,
-          aws_secretsmanager_secret.cognito_config.arn
+          aws_secretsmanager_secret.cognito_config.arn,
+          aws_secretsmanager_secret.sentry_dsn.arn
         ]
       },
       {
@@ -156,5 +169,11 @@ output "stripe_keys_secret_arn" {
 output "cognito_config_secret_arn" {
   description = "ARN of Cognito config secret"
   value       = aws_secretsmanager_secret.cognito_config.arn
+  sensitive   = true
+}
+
+output "sentry_dsn_secret_arn" {
+  description = "ARN of Sentry DSN secret"
+  value       = aws_secretsmanager_secret.sentry_dsn.arn
   sensitive   = true
 }

@@ -23,6 +23,46 @@ ecs_server_memory = 1024
 ecs_client_cpu = 256
 ecs_client_memory = 512
 
-# Domain Configuration
+# Domain & Certificate Configuration
 domain_name = "mangu-publishing.com"
-certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT_ID:certificate/CERTIFICATE_ID"
+
+# Automated ACM Certificates (recommended)
+# Set to true to auto-create certificates (requires manual DNS validation)
+# Set to false to use existing certificate ARN
+create_acm_certificate = true
+
+# Route53 Zone ID (optional - for automatic DNS validation)
+# Leave empty if DNS is managed outside AWS (e.g., Cloudflare)
+# If provided, DNS validation records are created automatically
+route53_zone_id = ""
+
+# Manual Certificate ARN (only needed if create_acm_certificate = false)
+# certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT_ID:certificate/CERTIFICATE_ID"
+certificate_arn = ""
+
+# Cost Monitoring Configuration
+# Budget Limits (USD)
+monthly_budget_limit = 1000  # Total monthly budget
+ecs_budget_limit = 400       # ECS compute services
+rds_budget_limit = 300       # RDS database services
+
+# Anomaly Detection Thresholds
+anomaly_impact_threshold = 200      # Percentage impact (200% = 2x baseline)
+anomaly_absolute_threshold = 50     # Absolute USD threshold
+budget_time_period_start = "2024-01-01_00:00"  # Budget tracking start
+
+# Alert Configuration
+cost_center = "engineering"
+budget_alert_emails = [
+  "devops@mangu-publishing.com",
+  "finance@mangu-publishing.com"
+]
+
+# Docker Image Tag
+image_tag = "latest"
+
+# CloudFront & WAF Configuration
+enable_geo_blocking = false
+blocked_countries = []  # Example: ["CN", "RU", "KP"]
+enable_origin_shield = false  # Additional cost, improves cache hit ratio
+origin_verify_secret = "CHANGE_ME_RANDOM_SECRET_32_CHARS"  # Generate with: openssl rand -base64 32

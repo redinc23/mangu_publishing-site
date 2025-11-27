@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - MANGU Publishing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .error-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 60px 40px;
+            max-width: 600px;
+            text-align: center;
+        }
+        .error-code {
+            font-size: 120px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 32px;
+            margin-bottom: 16px;
+            color: #333;
+        }
+        p {
+            font-size: 18px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 14px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        .error-details {
+            margin-top: 40px;
+            padding-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        .error-details p {
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 8px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="logo">MANGU Publishing</div>
+        <div class="error-code">500</div>
+        <h1>Something went wrong</h1>
+        <p>We're experiencing technical difficulties. Our team has been notified and is working to fix the issue. Please try again in a few moments.</p>
+        <a href="/" class="btn">Return Home</a>
+        
+        <div class="error-details">
+            <p>If the problem persists, please contact support.</p>
+            <p id="error-id"></p>
+        </div>
+    </div>
+    
+    <script>
+        // Generate unique error ID for tracking
+        const errorId = 'ERR-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        document.getElementById('error-id').textContent = 'Error ID: ' + errorId;
+        
+        // Log error for debugging
+        console.error('Error page loaded:', {
+            errorId: errorId,
+            timestamp: new Date().toISOString(),
+            url: window.location.href
+        });
+    </script>
+</body>
+</html>

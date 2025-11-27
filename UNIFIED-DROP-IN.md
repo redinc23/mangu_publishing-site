@@ -2,11 +2,15 @@
 
   # Unified Drop‑In Execution Guide (Docker + Normalization + Backend Toggle)
 
+  > **⚠️ DEPRECATED**: This guide references Docker for local development, which has been removed from this project.  
+  > **For current local development setup**, see `README.md` which uses Homebrew-installed PostgreSQL and Redis on Mac.  
+  > This document is kept for historical reference only.
+  >
   > This runbook gives you a one‑shot way to:  
   > **(0)** Stabilize Docker on Apple Silicon with health and Redis checks,  
   > **(1)** Bootstrap author‑normalization tests with a stub server, and  
   > **(2)** Enable a toggleable data backend (`memory` | `pg`) behind the same API.  
-  > It’s designed to be **additive**: keep existing working pieces; apply only what’s missing.
+  > It's designed to be **additive**: keep existing working pieces; apply only what's missing.
 
   ---
 

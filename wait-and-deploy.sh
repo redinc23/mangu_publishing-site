@@ -7,6 +7,11 @@
 # 1. Shows you the DNS records to add
 # 2. Polls certificate status every 30 seconds
 # 3. Automatically runs terraform apply when certificate is ISSUED
+#
+# Certificate ARN Resolution (in order of precedence):
+# 1. Terraform output (if ACM automation is enabled)
+# 2. terraform.tfvars file (manual certificate ARN)
+# 3. Error with instructions to run ACM bootstrap script
 ###############################################################################
 
 set -e
@@ -19,10 +24,41 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
+# Determine script and terraform directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TERRAFORM_DIR="${SCRIPT_DIR}/infrastructure/terraform"
+
 # Configuration
-CERT_ARN="arn:aws:acm:us-east-1:542993749514:certificate/036fa3ec-548a-437c-8d5e-d8ae3d8c2243"
 AWS_REGION="us-east-1"
 POLL_INTERVAL=30
+
+# Resolve certificate ARN: Try Terraform output first, then tfvars
+CERT_ARN=""
+
+if [[ -d "$TERRAFORM_DIR" ]]; then
+    # Try terraform output first (for ACM automation)
+    cd "$TERRAFORM_DIR"
+    CERT_ARN=$(terraform output -raw certificate_arn 2>/dev/null || echo "")
+    
+    # Fallback to terraform.tfvars if output is empty
+    if [[ -z "$CERT_ARN" && -f "terraform.tfvars" ]]; then
+        CERT_ARN=$(grep certificate_arn "terraform.tfvars" | cut -d'"' -f2 || echo "")
+    fi
+    cd "$SCRIPT_DIR"
+fi
+
+if [[ -z "$CERT_ARN" ]]; then
+    echo -e "${RED}ERROR: certificate_arn not found${NC}\n"
+    echo -e "${YELLOW}Please do one of the following:${NC}\n"
+    echo -e "  ${CYAN}Option 1 (Recommended):${NC} Enable ACM automation"
+    echo -e "    cd $TERRAFORM_DIR"
+    echo -e "    ./scripts/setup-acm-automation.sh"
+    echo -e ""
+    echo -e "  ${CYAN}Option 2:${NC} Add manual certificate ARN to terraform.tfvars"
+    echo -e "    certificate_arn = \"arn:aws:acm:us-east-1:...\""
+    echo -e ""
+    exit 1
+fi
 
 clear
 
@@ -171,7 +207,7 @@ echo -e "${CYAN}═════════════════════�
 echo -e "${CYAN}  Step 3: Pulling Latest Terraform Fixes${NC}"
 echo -e "${CYAN}════════════════════════════════════════════════════════════════${NC}\n"
 
-cd /Users/redinc23gmail.com/projects/mangu2-publishing
+cd "$SCRIPT_DIR"
 
 if git pull origin chore/ci-hardening-ops; then
     echo -e "${GREEN}✅ Latest changes pulled${NC}\n"
@@ -306,7 +342,7 @@ echo -e '     --secret-string '"'"'{"secret_key":"sk_live_xxx","webhook_secret":
 echo -e ""
 
 echo -e "${YELLOW}2. Deploy Application:${NC}\n"
-echo -e "   ${GREEN}cd /Users/redinc23gmail.com/projects/mangu2-publishing${NC}"
+echo -e "   ${GREEN}cd $SCRIPT_DIR${NC}"
 echo -e "   ${GREEN}./quick-deploy.sh${NC}"
 echo -e ""
 
@@ -323,7 +359,7 @@ echo -e ""
 # Step 9: Create Quick Reference
 ###############################################################################
 
-cat > /Users/redinc23gmail.com/projects/mangu2-publishing/DEPLOYMENT_COMPLETE.txt << ENDREF
+cat > "$SCRIPT_DIR/DEPLOYMENT_COMPLETE.txt" << ENDREF
 ╔═══════════════════════════════════════════════════════════════╗
 ║                                                               ║
 ║   ✅ INFRASTRUCTURE DEPLOYED SUCCESSFULLY!                   ║
@@ -352,7 +388,7 @@ NEXT STEPS:
 
 2. DEPLOY APPLICATION:
 
-   cd /Users/redinc23gmail.com/projects/mangu2-publishing
+   cd $SCRIPT_DIR
    ./quick-deploy.sh
 
 3. CONFIGURE DNS:

@@ -5,6 +5,7 @@ import React, {
   useContext,
   useEffect,
   useCallback,
+  useMemo,
 } from 'react';
 import { Amplify } from 'aws-amplify';
 import amplifyConfig from '../amplify-config';
@@ -39,13 +40,12 @@ if (missingAmplifyEnv.length) {
 }
 
 // after imports, before Amplify.configure
-// @ts-ignore
+// @ts-expect-error - suppress double configuration warning when Amplify typings are strict
 if (!window.__AMPLIFY_CONFIGURED__) {
   Amplify.configure(amplifyConfig);
-  // @ts-ignore
+  // @ts-expect-error - flag for subsequent loads in non-typed window
   window.__AMPLIFY_CONFIGURED__ = true;
 }
-
 
 const AuthContext = createContext(null);
 export const useAuth = () => {
@@ -54,10 +54,42 @@ export const useAuth = () => {
   return ctx;
 };
 
+const ADMIN_ROLE_NAMES = new Set(['admin', 'administrator', 'super-admin']);
+
+const toStringArray = (value) => {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => (typeof entry === 'string' ? entry.trim() : entry))
+      .filter(Boolean);
+  }
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  }
+  return [];
+};
+
+const extractGroupsFromSession = (session) => {
+  const roles = new Set();
+  const idPayload = session?.tokens?.idToken?.payload;
+  const accessPayload = session?.tokens?.accessToken?.payload;
+
+  toStringArray(idPayload?.['cognito:groups']).forEach((role) => roles.add(role));
+  toStringArray(idPayload?.groups).forEach((role) => roles.add(role));
+  toStringArray(accessPayload?.['cognito:groups']).forEach((role) => roles.add(role));
+  toStringArray(accessPayload?.groups).forEach((role) => roles.add(role));
+
+  return Array.from(roles);
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null); // { username, userId, signInDetails, ... }
   const [loading, setLoading] = useState(true);
   const [accessToken, setAccessToken] = useState(null);
+  const [userGroups, setUserGroups] = useState([]);
 
   const API_BASE = import.meta.env.VITE_API_URL || '';
 
@@ -91,11 +123,13 @@ export const AuthProvider = ({ children }) => {
 
       setUser(current);
       setAccessToken(token);
+      setUserGroups(extractGroupsFromSession(session));
 
       if (token) await syncUserWithBackend(token);
     } catch {
       setUser(null);
       setAccessToken(null);
+      setUserGroups([]);
     } finally {
       setLoading(false);
     }
@@ -170,6 +204,7 @@ export const AuthProvider = ({ children }) => {
       await amplifySignOut(); // pass { global: true } for global sign-out if needed
       setUser(null);
       setAccessToken(null);
+      setUserGroups([]);
     } catch (error) {
       console.error('Sign out error:', error);
     }
@@ -189,10 +224,20 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithHostedUI = () => signInWithRedirect();
 
+  const isAdmin = useMemo(
+    () =>
+      userGroups.some((role) =>
+        ADMIN_ROLE_NAMES.has(String(role).toLowerCase())
+      ),
+    [userGroups]
+  );
+
   const value = {
     user,
     loading,
     accessToken,
+    userGroups,
+    isAdmin,
     isAuthenticated: !!user,
     signIn,
     signUp,

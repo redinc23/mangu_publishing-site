@@ -77,6 +77,45 @@ resource "aws_s3_bucket_lifecycle_configuration" "uploads" {
   }
 }
 
+resource "aws_s3_bucket_policy" "uploads" {
+  bucket = aws_s3_bucket.uploads.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowCloudFrontOACAccess"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action   = "s3:GetObject"
+        Resource = "${aws_s3_bucket.uploads.arn}/*"
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = aws_cloudfront_distribution.main.arn
+          }
+        }
+      },
+      {
+        Sid       = "DenyDirectAccess"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.uploads.arn}/*"
+        Condition = {
+          StringNotEquals = {
+            "AWS:SourceArn" = aws_cloudfront_distribution.main.arn
+          }
+          Bool = {
+            "aws:ViaAWSService" = "false"
+          }
+        }
+      }
+    ]
+  })
+}
+
 resource "aws_s3_bucket" "static_assets" {
   bucket = "${var.project_name}-static-${var.environment}"
 
@@ -119,7 +158,7 @@ resource "aws_s3_bucket_policy" "static_assets" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "AllowCloudFrontAccess"
+        Sid    = "AllowCloudFrontOACAccess"
         Effect = "Allow"
         Principal = {
           Service = "cloudfront.amazonaws.com"
@@ -129,6 +168,21 @@ resource "aws_s3_bucket_policy" "static_assets" {
         Condition = {
           StringEquals = {
             "AWS:SourceArn" = aws_cloudfront_distribution.main.arn
+          }
+        }
+      },
+      {
+        Sid       = "DenyDirectAccess"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.static_assets.arn}/*"
+        Condition = {
+          StringNotEquals = {
+            "AWS:SourceArn" = aws_cloudfront_distribution.main.arn
+          }
+          Bool = {
+            "aws:ViaAWSService" = "false"
           }
         }
       }

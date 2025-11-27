@@ -205,8 +205,9 @@ Before deploying to production, ensure:
 # Load credentials
 source scripts/launch_credentials.sh
 
-# Start infrastructure
-./start-dev.sh
+# Start database services (PostgreSQL and Redis)
+brew services start postgresql@16
+brew services start redis
 
 # Start applications
 npm run dev

@@ -4,18 +4,26 @@ resource "aws_security_group" "redis" {
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    from_port       = 6379
-    to_port         = 6379
+    from_port       = local.redis_port
+    to_port         = local.redis_port
     protocol        = "tcp"
     security_groups = [aws_security_group.ecs_tasks.id]
   }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+  # ElastiCache doesn't need egress, but keeping for compatibility
+  dynamic "egress" {
+    for_each = var.enable_zero_trust_egress ? [] : [1]
+    content {
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = [local.all_ipv4_cidr]
+    }
   }
+
+  # Zero-trust: Redis should only respond, no outbound needed
+  # Note: Removing egress rule that referenced ecs_tasks to avoid circular dependency
+  # Redis responses are handled automatically via the ingress rule from ecs_tasks
 
   tags = {
     Name = "${var.project_name}-redis-sg-${var.environment}"
@@ -53,7 +61,7 @@ resource "aws_elasticache_parameter_group" "redis" {
 resource "aws_elasticache_replication_group" "main" {
   replication_group_id = "${var.project_name}-redis-${var.environment}"
   description          = "Redis cluster for MANGU Publishing"
-  
+
   engine               = "redis"
   engine_version       = "7.1"
   node_type            = var.redis_node_type
@@ -69,14 +77,14 @@ resource "aws_elasticache_replication_group" "main" {
   auth_token                 = random_password.redis_auth_token.result
 
   automatic_failover_enabled = var.redis_num_cache_nodes > 1
-  multi_az_enabled          = var.redis_num_cache_nodes > 1
+  multi_az_enabled           = var.redis_num_cache_nodes > 1
 
   snapshot_retention_limit = 5
-  snapshot_window         = "03:00-05:00"
-  maintenance_window      = "sun:05:00-sun:07:00"
+  snapshot_window          = "03:00-05:00"
+  maintenance_window       = "sun:05:00-sun:07:00"
 
   auto_minor_version_upgrade = true
-  apply_immediately         = false
+  apply_immediately          = false
 
   log_delivery_configuration {
     destination      = aws_cloudwatch_log_group.redis_slow_log.name
@@ -98,9 +106,9 @@ resource "aws_elasticache_replication_group" "main" {
 }
 
 resource "random_password" "redis_auth_token" {
-  length  = 32
-  special = true
-  override_special = "!&#$^<>-"  # Only Redis-allowed special characters
+  length           = 32
+  special          = true
+  override_special = "!&#$^<>-" # Only Redis-allowed special characters
 }
 
 resource "aws_secretsmanager_secret" "redis_credentials" {
@@ -115,10 +123,10 @@ resource "aws_secretsmanager_secret" "redis_credentials" {
 resource "aws_secretsmanager_secret_version" "redis_credentials" {
   secret_id = aws_secretsmanager_secret.redis_credentials.id
   secret_string = jsonencode({
-    host      = aws_elasticache_replication_group.main.primary_endpoint_address
-    port      = aws_elasticache_replication_group.main.port
+    host       = aws_elasticache_replication_group.main.primary_endpoint_address
+    port       = aws_elasticache_replication_group.main.port
     auth_token = random_password.redis_auth_token.result
-    url       = "redis://:${random_password.redis_auth_token.result}@${aws_elasticache_replication_group.main.primary_endpoint_address}:${aws_elasticache_replication_group.main.port}"
+    url        = "redis://:${random_password.redis_auth_token.result}@${aws_elasticache_replication_group.main.primary_endpoint_address}:${aws_elasticache_replication_group.main.port}"
   })
 }
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { authedFetch } from '../lib/api.js';
+import { apiClient } from '../lib/api.js';
 import './NotionAI.module.css';
 
 /**
@@ -12,21 +12,27 @@ export default function NotionAI({ book, onContentGenerated }) {
   const [generatedContent, setGeneratedContent] = useState(null);
   const [notionStatus, setNotionStatus] = useState(null);
 
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
   // Check Notion status on mount
   useEffect(() => {
+    let isMounted = true;
+
     const checkNotionStatus = async () => {
       try {
-        const response = await fetch(`${API_BASE}/notion/status`);
-        const data = await response.json();
-        setNotionStatus(data);
+        const data = await apiClient.notion.status();
+        if (isMounted) {
+          setNotionStatus(data);
+        }
       } catch (err) {
         console.error('Failed to check Notion status:', err);
       }
     };
+
     checkNotionStatus();
-  }, [API_BASE]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const generateDescription = async () => {
     if (!book?.title) {
@@ -39,22 +45,12 @@ export default function NotionAI({ book, onContentGenerated }) {
     setGeneratedContent(null);
 
     try {
-      const response = await authedFetch('/api/notion/generate-description', {
-        method: 'POST',
-        body: JSON.stringify({
-          title: book.title,
-          authors: book.authors || [],
-          genre: book.genre || null,
-          tags: book.tags || []
-        })
+      const data = await apiClient.notion.generateDescription({
+        title: book.title,
+        authors: book.authors || [],
+        genre: book.genre || null,
+        tags: book.tags || []
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate description');
-      }
-
-      const data = await response.json();
       setGeneratedContent({
         type: 'description',
         content: data.description
@@ -81,21 +77,11 @@ export default function NotionAI({ book, onContentGenerated }) {
     setGeneratedContent(null);
 
     try {
-      const response = await authedFetch('/api/notion/generate-summary', {
-        method: 'POST',
-        body: JSON.stringify({
-          title: book.title,
-          description: book.description || null,
-          authors: book.authors || []
-        })
+      const data = await apiClient.notion.generateSummary({
+        title: book.title,
+        description: book.description || null,
+        authors: book.authors || []
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate summary');
-      }
-
-      const data = await response.json();
       setGeneratedContent({
         type: 'summary',
         content: data.summary
@@ -122,21 +108,11 @@ export default function NotionAI({ book, onContentGenerated }) {
     setGeneratedContent(null);
 
     try {
-      const response = await authedFetch('/api/notion/generate-marketing', {
-        method: 'POST',
-        body: JSON.stringify({
-          title: book.title,
-          authors: book.authors || [],
-          genre: book.genre || null
-        })
+      const data = await apiClient.notion.generateMarketing({
+        title: book.title,
+        authors: book.authors || [],
+        genre: book.genre || null
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate marketing copy');
-      }
-
-      const data = await response.json();
       setGeneratedContent({
         type: 'marketing',
         content: data.marketingCopy
@@ -162,19 +138,9 @@ export default function NotionAI({ book, onContentGenerated }) {
     setError(null);
 
     try {
-      const response = await authedFetch('/api/notion/sync-book', {
-        method: 'POST',
-        body: JSON.stringify({
-          bookId: book.id
-        })
+      const data = await apiClient.notion.syncBook({
+        bookId: book.id
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to sync to Notion');
-      }
-
-      const data = await response.json();
       setGeneratedContent({
         type: 'sync',
         content: `Book synced successfully! View in Notion: ${data.notionUrl}`,

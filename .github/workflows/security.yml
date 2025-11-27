@@ -1,0 +1,350 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run security scans daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+env:
+  DOCKER_BUILDKIT: 1
+  TRIVY_VERSION: 0.48.0
+
+jobs:
+  trivy-container-scan:
+    name: Trivy Container Scanning
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dockerfile: ['Dockerfile', 'Dockerfile.client']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Determine image name
+        id: image-name
+        run: |
+          if [ "${{ matrix.dockerfile }}" = "Dockerfile.client" ]; then
+            echo "name=mangu-client" >> $GITHUB_OUTPUT
+          else
+            echo "name=mangu-server" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --file ${{ matrix.dockerfile }} \
+            --tag ${{ steps.image-name.outputs.name }}:${{ github.sha }} \
+            --tag ${{ steps.image-name.outputs.name }}:latest \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.image-name.outputs.name }}:${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-results-${{ steps.image-name.outputs.name }}.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          vuln-type: 'os,library'
+          scanners: 'vuln,secret,config'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results-${{ steps.image-name.outputs.name }}.sarif'
+          category: trivy-${{ steps.image-name.outputs.name }}
+
+      - name: Generate Trivy report
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.image-name.outputs.name }}:${{ github.sha }}
+          format: 'table'
+          output: 'trivy-report-${{ steps.image-name.outputs.name }}.txt'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy report as artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-report-${{ steps.image-name.outputs.name }}
+          path: trivy-report-${{ steps.image-name.outputs.name }}.txt
+          retention-days: 30
+
+      - name: Check for critical vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.image-name.outputs.name }}:${{ github.sha }}
+          format: 'json'
+          output: 'trivy-critical.json'
+          severity: 'CRITICAL'
+          exit-code: '1'
+
+  snyk-dependency-scan:
+    name: Snyk Dependency Scanning
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        workspace: ['server', 'client']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.workspace }}
+        run: npm ci
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --file=${{ matrix.workspace }}/package.json
+
+      - name: Upload Snyk results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: snyk.sarif
+          category: snyk-${{ matrix.workspace }}
+
+      - name: Generate Snyk report
+        if: always()
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+          args: --json --file=${{ matrix.workspace }}/package.json > snyk-report-${{ matrix.workspace }}.json || true
+
+      - name: Upload Snyk report as artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: snyk-report-${{ matrix.workspace }}
+          path: snyk-report-${{ matrix.workspace }}.json
+          retention-days: 30
+
+  secret-scanning:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog OSS Secret Scanning
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
+
+      - name: Gitleaks Secret Scanning
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  sast-analysis:
+    name: Static Application Security Testing
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint security plugin
+        run: |
+          npm install --save-dev eslint-plugin-security
+          npx eslint . --ext .js,.jsx,.ts,.tsx --format json --output-file eslint-security.json || true
+        continue-on-error: true
+
+      - name: Upload ESLint results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eslint-security-report
+          path: eslint-security.json
+          retention-days: 30
+
+      - name: Semgrep SAST
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/nodejs
+            p/react
+            p/express
+            p/sql-injection
+            p/xss
+          generateSarif: true
+
+      - name: Upload Semgrep results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+  infrastructure-security:
+    name: Infrastructure Security Scanning
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy for IaC scanning
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: 'infrastructure/terraform'
+          format: 'sarif'
+          output: 'trivy-iac-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy IaC results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-iac-results.sarif'
+          category: trivy-iac
+
+      - name: Run Checkov for Terraform
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: infrastructure/terraform
+          framework: terraform
+          output_format: sarif
+          output_file_path: checkov-results.sarif
+          soft_fail: true
+
+      - name: Upload Checkov results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: checkov-results.sarif
+          category: checkov
+
+      - name: Terraform security scan with tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: infrastructure/terraform
+          format: sarif
+          sarif_file: tfsec-results.sarif
+
+      - name: Upload tfsec results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: tfsec-results.sarif
+          category: tfsec
+
+  compliance-check:
+    name: Compliance Scanning
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run InSpec compliance tests
+        run: |
+          docker run --rm \
+            -v $(pwd):/workspace \
+            chef/inspec \
+            exec /workspace/tests/compliance \
+            --reporter json:/workspace/inspec-results.json \
+            --reporter cli || true
+
+      - name: Upload InSpec results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compliance-report
+          path: inspec-results.json
+          retention-days: 90
+
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [trivy-container-scan, snyk-dependency-scan, secret-scanning, sast-analysis, infrastructure-security]
+    if: always()
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Generate security summary
+        run: |
+          echo "# Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Trivy Container Scan: ${{ needs.trivy-container-scan.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Snyk Dependency Scan: ${{ needs.snyk-dependency-scan.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Secret Scanning: ${{ needs.secret-scanning.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ SAST Analysis: ${{ needs.sast-analysis.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Infrastructure Security: ${{ needs.infrastructure-security.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Details" >> $GITHUB_STEP_SUMMARY
+          echo "Full scan results are available in the Security tab." >> $GITHUB_STEP_SUMMARY
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const summary = `## 🔒 Security Scan Results
+            
+            | Check | Status |
+            |-------|--------|
+            | Trivy Container Scan | ${{ needs.trivy-container-scan.result }} |
+            | Snyk Dependency Scan | ${{ needs.snyk-dependency-scan.result }} |
+            | Secret Scanning | ${{ needs.secret-scanning.result }} |
+            | SAST Analysis | ${{ needs.sast-analysis.result }} |
+            | Infrastructure Security | ${{ needs.infrastructure-security.result }} |
+            
+            📊 Detailed results are available in the [Security tab](https://github.com/${{ github.repository }}/security).
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });

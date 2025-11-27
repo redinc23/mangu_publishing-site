@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance - MANGU Publishing</title>
+    <meta http-equiv="refresh" content="60">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .maintenance-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 60px 40px;
+            max-width: 600px;
+            text-align: center;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 30px;
+        }
+        .icon {
+            font-size: 80px;
+            margin-bottom: 30px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        p {
+            font-size: 18px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+        .countdown {
+            display: inline-block;
+            padding: 16px 24px;
+            background: #f7f9fc;
+            border-radius: 8px;
+            margin: 24px 0;
+            font-size: 16px;
+            color: #667eea;
+            font-weight: 600;
+        }
+        .status {
+            margin-top: 40px;
+            padding: 20px;
+            background: #f7f9fc;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .status p {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 0;
+        }
+        .social-links {
+            margin-top: 32px;
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+        .social-link {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .social-link:hover {
+            background: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="maintenance-container">
+        <div class="logo">MANGU Publishing</div>
+        <div class="icon">🔧</div>
+        <h1>Under Maintenance</h1>
+        <p>We're currently performing scheduled maintenance to improve your experience.</p>
+        <p>We'll be back online shortly!</p>
+        
+        <div class="countdown">
+            <span id="countdown">Checking status...</span>
+        </div>
+        
+        <div class="status">
+            <p><strong>What we're doing:</strong></p>
+            <p>System upgrades and performance optimizations</p>
+        </div>
+        
+        <div class="social-links">
+            <a href="#" class="social-link">Status Updates</a>
+            <a href="#" class="social-link">Contact Support</a>
+        </div>
+    </div>
+    
+    <script>
+        let secondsLeft = 60;
+        
+        function updateCountdown() {
+            const minutes = Math.floor(secondsLeft / 60);
+            const seconds = secondsLeft % 60;
+            document.getElementById('countdown').textContent = 
+                `Refreshing in ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (secondsLeft > 0) {
+                secondsLeft--;
+            } else {
+                document.getElementById('countdown').textContent = 'Refreshing now...';
+            }
+        }
+        
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+        
+        // Log maintenance page view
+        console.log('Maintenance page loaded:', {
+            timestamp: new Date().toISOString(),
+            url: window.location.href
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,249 @@
+name: CloudFront Deploy & Invalidation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - 'infrastructure/terraform/cloudfront.tf'
+      - '.github/workflows/cloudfront-deploy.yml'
+  workflow_dispatch:
+    inputs:
+      invalidation_paths:
+        description: 'Paths to invalidate (space-separated)'
+        required: false
+        default: '/*'
+      full_invalidation:
+        description: 'Full cache invalidation'
+        type: boolean
+        required: false
+        default: false
+
+env:
+  AWS_REGION: us-east-1
+  TERRAFORM_VERSION: 1.6.0
+
+jobs:
+  deploy-static-assets:
+    name: Deploy Static Assets
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, '[deploy]') || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Build client
+        working-directory: client
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Get Terraform outputs
+        id: terraform
+        working-directory: infrastructure/terraform
+        run: |
+          # Install Terraform
+          wget -q https://releases.hashicorp.com/terraform/${{ env.TERRAFORM_VERSION }}/terraform_${{ env.TERRAFORM_VERSION }}_linux_amd64.zip
+          unzip -q terraform_${{ env.TERRAFORM_VERSION }}_linux_amd64.zip
+          chmod +x terraform
+          
+          # Initialize and get outputs
+          ./terraform init -backend-config="bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}"
+          
+          STATIC_BUCKET=$(./terraform output -raw static_assets_bucket_name)
+          DISTRIBUTION_ID=$(./terraform output -raw cloudfront_distribution_id)
+          
+          echo "static_bucket=$STATIC_BUCKET" >> $GITHUB_OUTPUT
+          echo "distribution_id=$DISTRIBUTION_ID" >> $GITHUB_OUTPUT
+
+      - name: Deploy to S3
+        run: |
+          aws s3 sync client/dist s3://${{ steps.terraform.outputs.static_bucket }}/ \
+            --delete \
+            --cache-control "public, max-age=31536000, immutable" \
+            --exclude "index.html" \
+            --exclude "error.html" \
+            --exclude "maintenance.html"
+          
+          # Deploy index.html with shorter cache
+          aws s3 cp client/dist/index.html s3://${{ steps.terraform.outputs.static_bucket }}/index.html \
+            --cache-control "public, max-age=300, must-revalidate" \
+            --content-type "text/html"
+
+      - name: Deploy error pages
+        run: |
+          aws s3 cp client/public/error.html s3://${{ steps.terraform.outputs.static_bucket }}/error.html \
+            --cache-control "public, max-age=300" \
+            --content-type "text/html"
+          
+          aws s3 cp client/public/maintenance.html s3://${{ steps.terraform.outputs.static_bucket }}/maintenance.html \
+            --cache-control "public, max-age=60" \
+            --content-type "text/html"
+
+      - name: Invalidate CloudFront cache
+        id: invalidation
+        run: |
+          PATHS="${{ github.event.inputs.invalidation_paths || '/index.html /error.html /maintenance.html' }}"
+          
+          if [ "${{ github.event.inputs.full_invalidation }}" = "true" ]; then
+            PATHS="/*"
+          fi
+          
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id ${{ steps.terraform.outputs.distribution_id }} \
+            --paths $PATHS \
+            --query 'Invalidation.Id' \
+            --output text)
+          
+          echo "invalidation_id=$INVALIDATION_ID" >> $GITHUB_OUTPUT
+          echo "✅ Invalidation created: $INVALIDATION_ID"
+
+      - name: Wait for invalidation
+        run: |
+          echo "Waiting for invalidation ${{ steps.invalidation.outputs.invalidation_id }}..."
+          aws cloudfront wait invalidation-completed \
+            --distribution-id ${{ steps.terraform.outputs.distribution_id }} \
+            --id ${{ steps.invalidation.outputs.invalidation_id }}
+          echo "✅ Invalidation completed"
+
+      - name: Test CloudFront
+        run: |
+          # Get CloudFront domain
+          CF_DOMAIN=$(aws cloudfront get-distribution \
+            --id ${{ steps.terraform.outputs.distribution_id }} \
+            --query 'Distribution.DomainName' \
+            --output text)
+          
+          # Test endpoints
+          echo "Testing https://$CF_DOMAIN/"
+          curl -sSf -I "https://$CF_DOMAIN/" | grep -i "x-cache\|http/"
+          
+          echo "Testing error page"
+          curl -sSf "https://$CF_DOMAIN/error.html" > /dev/null
+          
+          echo "✅ CloudFront tests passed"
+
+      - name: Deployment summary
+        run: |
+          cat << EOF >> $GITHUB_STEP_SUMMARY
+          ## 🚀 CloudFront Deployment Complete
+          
+          **Distribution:** ${{ steps.terraform.outputs.distribution_id }}
+          **Bucket:** ${{ steps.terraform.outputs.static_bucket }}
+          **Invalidation:** ${{ steps.invalidation.outputs.invalidation_id }}
+          
+          ### Files Deployed
+          - Static assets with 1-year cache
+          - index.html with 5-minute cache
+          - Error pages (error.html, maintenance.html)
+          
+          ### Cache Invalidation
+          Paths: \`${{ github.event.inputs.invalidation_paths || '/index.html /error.html /maintenance.html' }}\`
+          
+          ### Testing
+          Run comprehensive tests:
+          \`\`\`bash
+          ./infrastructure/terraform/scripts/test-cloudfront.sh production
+          \`\`\`
+          EOF
+
+  terraform-apply:
+    name: Apply Terraform Changes
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, 'infrastructure/terraform/cloudfront.tf')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Terraform Init
+        working-directory: infrastructure/terraform
+        run: terraform init -backend-config="bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}"
+
+      - name: Terraform Plan
+        working-directory: infrastructure/terraform
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: infrastructure/terraform
+        run: terraform apply -auto-approve tfplan
+
+      - name: Test CloudFront Configuration
+        working-directory: infrastructure/terraform
+        run: |
+          chmod +x scripts/test-cloudfront.sh
+          ./scripts/test-cloudfront.sh production
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Check WAF rules
+        run: |
+          echo "Checking WAF configuration..."
+          
+          # Get WAF Web ACL
+          WAF_ACLS=$(aws wafv2 list-web-acls --scope CLOUDFRONT --region us-east-1)
+          
+          if echo "$WAF_ACLS" | grep -q "mangu-publishing"; then
+            echo "✅ WAF Web ACL found"
+            
+            # Get WAF metrics
+            aws cloudwatch get-metric-statistics \
+              --namespace AWS/WAFV2 \
+              --metric-name BlockedRequests \
+              --dimensions Name=WebACL,Value=mangu-publishing-cloudfront-waf-production Name=Region,Value=us-east-1 Name=Rule,Value=ALL \
+              --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S) \
+              --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \
+              --period 3600 \
+              --statistics Sum || echo "No blocked requests in last hour"
+          else
+            echo "⚠️  WAF Web ACL not found"
+          fi
+
+      - name: Security headers check
+        run: |
+          # This will be run by the test-cloudfront.sh script
+          echo "Security headers will be checked in post-deployment tests"

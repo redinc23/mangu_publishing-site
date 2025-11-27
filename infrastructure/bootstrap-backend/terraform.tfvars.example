@@ -1,0 +1,19 @@
+# Example Terraform variables for bootstrap backend
+# Copy this file to terraform.tfvars and customize as needed
+
+# AWS region where backend resources will be created
+aws_region = "us-east-1"
+
+# S3 bucket name for Terraform state (must be globally unique)
+state_bucket_name = "mangu-terraform-state"
+
+# DynamoDB table name for state locking
+dynamodb_table_name = "mangu-terraform-locks"
+
+# Tags to apply to all backend resources
+default_tags = {
+  Project     = "MANGU-Publishing"
+  ManagedBy   = "Terraform"
+  Environment = "Production"
+  CostCenter  = "Engineering"
+}

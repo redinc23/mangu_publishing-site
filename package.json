@@ -4,7 +4,7 @@
   "description": "MANGU PUBLISHING - Stream Unlimited Books",
   "main": "index.js",
   "scripts": {
-    "dev": "concurrently \"yarn workspace mangu-server dev\" \"yarn workspace mangu-client dev\"",
+    "dev": "npx concurrently \"yarn workspace mangu-server dev\" \"yarn workspace mangu-client dev\"",
     "build": "yarn workspace mangu-client build",
     "start": "yarn workspace mangu-server start",
     "lint": "eslint .",
@@ -26,8 +26,11 @@
     "server"
   ],
   "devDependencies": {
+    "@vitejs/plugin-react": "^5.1.1",
     "concurrently": "^8.2.2",
-    "vite": "^4.5.14"
+    "rollup-plugin-visualizer": "^6.0.5",
+    "vite": "^7.2.4",
+    "yarn": "^1.22.22"
   },
   "dependencies": {
     "@notionhq/client": "^5.4.0",

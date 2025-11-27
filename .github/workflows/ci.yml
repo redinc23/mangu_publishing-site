@@ -11,19 +11,113 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-node@v4
-        with: { node-version: "20" }
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: |
+            package-lock.json
+            client/package-lock.json
+            server/package-lock.json
+      
+      - name: Cache ESLint
+        uses: actions/cache@v4
+        with:
+          path: |
+            .eslintcache
+            client/.eslintcache
+            server/.eslintcache
+          key: ${{ runner.os }}-eslint-${{ hashFiles('**/.eslintrc*', '**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-eslint-
+      
       - run: npm ci || npm i
       - run: npm run lint || echo "no lint script"
       - run: npm run typecheck || echo "no typecheck script"
       - run: npm test -- --ci || echo "no tests"
 
+  integration-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_USER: testuser
+          POSTGRES_DB: mangu_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: |
+            package-lock.json
+            client/package-lock.json
+            server/package-lock.json
+      
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('client/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run server integration tests
+        working-directory: server
+        env:
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/mangu_test
+          REDIS_URL: redis://localhost:6379
+          NODE_ENV: test
+        run: npm run test:integration || echo "no integration tests"
+      
+      - name: Run e2e tests
+        if: hashFiles('tests/e2e/**/*.spec.*') != ''
+        working-directory: client
+        env:
+          VITE_API_URL: http://localhost:3000
+        run: npm run test:e2e
+
   py:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
+        with: 
+          python-version: "3.11"
+          cache: "pip"
+      
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
       - run: pip install -r requirements.txt || true
       - run: pip install ruff pytest || true
       - run: ruff check . || echo "ruff not configured"

@@ -1,30 +1,38 @@
 #!/usr/bin/env bash
 echo "Starting MANGU Development Environment..."
 
-# Get the project root directory
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Load credentials if available
+if [ -f "$PROJECT_ROOT/scripts/launch_credentials.sh" ]; then
+    source "$PROJECT_ROOT/scripts/launch_credentials.sh"
+fi
+
+# Load server .env file (single source of truth)
+if [ -f "$PROJECT_ROOT/server/.env" ]; then
+    export $(cat "$PROJECT_ROOT/server/.env" | grep -v '^#' | xargs)
+fi
+
 # Start server in background
-echo "Starting server..."
+echo "Starting server on port ${PORT:-3001}..."
 cd "$PROJECT_ROOT/server" && npm run dev &
 SERVER_PID=$!
 
-# Wait a moment for server to start
+# Wait for server to start
 sleep 3
 
-# Start Next.js frontend
-echo "Starting Next.js frontend..."
-cd "$PROJECT_ROOT/nextjs-migration/mangu" && npm run dev -- -p 3000 &
+# Start Vite frontend
+echo "Starting Vite frontend..."
+cd "$PROJECT_ROOT/client" && npm run dev &
 CLIENT_PID=$!
 
 echo ""
 echo "🚀 Development servers started!"
-echo "   Frontend: http://localhost:3000"
-echo "   Backend:  http://localhost:5000"
+echo "   Frontend: http://localhost:5173"
+echo "   Backend:  http://localhost:${PORT:-3001}"
 echo ""
 echo "Press Ctrl+C to stop all servers"
 
-# Wait for user interrupt
-trap "echo 'Stopping servers...'; kill $SERVER_PID $CLIENT_PID; exit" INT
+# Cleanup on exit
+trap "echo 'Stopping servers...'; kill $SERVER_PID $CLIENT_PID 2>/dev/null; exit" INT TERM
 wait
-

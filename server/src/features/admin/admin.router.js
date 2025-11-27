@@ -1,15 +1,19 @@
 import { Router } from 'express';
-import { 
-  getAdminBooks, 
-  createBook, 
-  updateBook, 
-  deleteBook 
+import {
+  getAdminBooks,
+  getAdminBook,
+  createBook,
+  updateBook,
+  deleteBook
 } from './admin.controller.js';
 
 const router = Router();
 
 // GET /api/admin/books - Get all books for admin management
 router.get('/books', getAdminBooks);
+
+// GET /api/admin/books/:id - Get a specific book
+router.get('/books/:id', getAdminBook);
 
 // POST /api/admin/books - Create a new book
 router.post('/books', createBook);

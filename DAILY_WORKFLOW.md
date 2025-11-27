@@ -10,15 +10,16 @@ Quick reference for getting started each day.
 # 1. Load credentials (REQUIRED for git operations)
 source scripts/credentials/local.sh
 
-# 2. Verify Docker is running
-docker ps
+# 2. Verify services are running
+brew services list | grep -E "postgresql|redis"
 
-# 3. Start backend dependencies
-./start-dev.sh
+# 3. Start backend services if needed
+brew services start postgresql@16
+brew services start redis
 
 # 4. In separate terminal: Start API server
 npm --prefix server run dev
-# → API running at http://localhost:5000
+# → API running at http://localhost:3001
 
 # 5. In another terminal: Start frontend
 npm --prefix client run dev
@@ -45,7 +46,8 @@ echo $GITHUB_TOKEN  # Should show your token
 ### Development
 ```bash
 # Start everything (after loading credentials)
-./start-dev.sh                    # Docker services
+brew services start postgresql@16  # PostgreSQL database
+brew services start redis          # Redis cache
 npm --prefix server run dev       # API server
 npm --prefix client run dev       # Frontend dev server
 ```
@@ -64,7 +66,13 @@ git push
 ### Database
 ```bash
 # Connect to PostgreSQL
-docker exec -it mangu-postgres psql -U mangu -d mangu
+psql -d mangu_db
+
+# Check service status
+brew services list | grep postgresql
+
+# Start PostgreSQL if not running
+brew services start postgresql@16
 
 # Run migrations (if you have them)
 npm --prefix server run migrate
@@ -73,19 +81,19 @@ npm --prefix server run migrate
 npm --prefix server run seed
 ```
 
-### Docker
+### Redis
 ```bash
-# View running containers
-docker ps
+# Check Redis status
+brew services list | grep redis
 
-# View logs
-docker-compose logs -f
+# Start Redis if not running
+brew services start redis
 
-# Stop all services
-docker-compose down
+# Test Redis connection
+redis-cli ping
 
-# Restart services
-docker-compose restart
+# Connect to Redis CLI
+redis-cli
 ```
 
 ---
@@ -94,13 +102,10 @@ docker-compose restart
 
 ### Port Already in Use
 ```bash
-# Find what's using port 5000
-lsof -ti:5000
+# Find what's using port 3001 (server)
+lsof -ti:3001 | xargs kill -9
 
-# Kill it
-lsof -ti:5000 | xargs kill -9
-
-# Same for port 5173
+# Same for port 5173 (client)
 lsof -ti:5173 | xargs kill -9
 ```
 
@@ -112,14 +117,19 @@ source scripts/credentials/local.sh
 git push
 ```
 
-### Docker Not Running
+### Services Not Running
 ```bash
-# Start Docker Desktop
-open -a Docker
+# Check service status
+brew services list
 
-# Wait for it to start, then:
-docker ps
-./start-dev.sh
+# Start PostgreSQL
+brew services start postgresql@16
+
+# Start Redis
+brew services start redis
+
+# Verify services are running
+brew services list | grep -E "postgresql|redis"
 ```
 
 ### Dependencies Out of Date
@@ -155,8 +165,8 @@ npm --prefix client install
 | Service | URL | Notes |
 |---------|-----|-------|
 | Frontend | http://localhost:5173 | Vite dev server |
-| API | http://localhost:5000 | Express server |
-| API Health | http://localhost:5000/api/health | Check if API is up |
+| API | http://localhost:3001 | Express server |
+| API Health | http://localhost:3001/api/health | Check if API is up |
 | Database | localhost:5432 | PostgreSQL |
 | Redis | localhost:6379 | Redis cache |
 
@@ -167,7 +177,7 @@ npm --prefix client install
 1. **Create terminal aliases** (add to `~/.zshrc` or `~/.bashrc`):
    ```bash
    alias mangu-creds='source ~/projects/mangu2-publishing/scripts/credentials/local.sh'
-   alias mangu-start='cd ~/projects/mangu2-publishing && ./start-dev.sh'
+   alias mangu-services='brew services start postgresql@16 && brew services start redis'
    alias mangu-server='cd ~/projects/mangu2-publishing && npm --prefix server run dev'
    alias mangu-client='cd ~/projects/mangu2-publishing && npm --prefix client run dev'
    ```
@@ -176,17 +186,16 @@ npm --prefix client install
 
 3. **Set up VS Code tasks** for one-click startup
 
-4. **Check Docker first** - most issues are from Docker not running
+4. **Check services first** - most issues are from PostgreSQL/Redis not running
 
 ---
 
 ## 🔄 Typical Development Session
 
 ```bash
-# Terminal 1: Docker & Services
-cd ~/projects/mangu2-publishing
-source scripts/credentials/local.sh
-./start-dev.sh
+# Terminal 1: Start Services (one-time per session)
+brew services start postgresql@16
+brew services start redis
 
 # Terminal 2: Backend
 cd ~/projects/mangu2-publishing

@@ -1,48 +1,59 @@
+import logger from './utils/logger.js';
+import * as Sentry from '@sentry/node';
 import app, { NODE_ENV, setDbPool, setRedisClient } from './app.js';
-import pg from 'pg';
 import { createClient as createRedisClient } from 'redis';
+import { initializePool as initializeDatabasePool, shutdown as shutdownDatabase } from './config/database.js';
+import { initializeSocket, shutdown as shutdownSocket } from './services/socket.js';
 
-const { Pool } = pg;
+const sentryIntegrations = [];
 
-const PORT = process.env.PORT || 3001;
+if (process.env.SENTRY_DSN) {
+  try {
+    const { nodeProfilingIntegration } = await import('@sentry/profiling-node');
+    if (typeof nodeProfilingIntegration === 'function') {
+      sentryIntegrations.push(nodeProfilingIntegration());
+    }
+  } catch (error) {
+    logger.warn('Sentry profiling integration unavailable; continuing without CPU profiler', {
+      error: error?.message || error
+    });
+  }
+
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: NODE_ENV,
+    integrations: sentryIntegrations,
+    tracesSampleRate: NODE_ENV === 'production' ? 0.1 : 1.0,
+    profilesSampleRate: NODE_ENV === 'production' ? 0.1 : 1.0,
+  });
+}
+
+const PORT = process.env.PORT || 3009;
 
 let dbPool = null;
 let redisClient = null;
 let serverInstance = null;
+let socketIO = null;
 let shutdownRegistered = false;
+
+const isTruthyEnv = (value) => {
+  if (!value) return false;
+  return ['1', 'true', 'yes', 'y', 'on'].includes(String(value).trim().toLowerCase());
+};
+
+const devAllowsNoDb = () =>
+  NODE_ENV === 'development' && isTruthyEnv(process.env.DEV_ALLOW_NO_DB);
 
 async function initializeDatabase() {
   try {
-    const isProduction = NODE_ENV === 'production';
-    const dbConfig = {
-      connectionString: process.env.DATABASE_URL,
-      max: parseInt(process.env.DATABASE_POOL_MAX || '20', 10),
-      min: parseInt(process.env.DATABASE_POOL_MIN || '2', 10),
-      idleTimeoutMillis: parseInt(process.env.DATABASE_IDLE_TIMEOUT || '600000', 10),
-      connectionTimeoutMillis: parseInt(process.env.DATABASE_TIMEOUT || '30000', 10)
-    };
-    
-    // Only add SSL config if DATABASE_URL contains ssl or if explicitly in production
-    if (isProduction && process.env.DATABASE_URL?.includes('amazonaws.com')) {
-      dbConfig.ssl = { rejectUnauthorized: false };
-    }
-    
-    dbPool = new Pool(dbConfig);
-
-    const client = await dbPool.connect();
-    await client.query('SELECT NOW()');
-    client.release();
-
+    dbPool = await initializeDatabasePool();
     setDbPool(dbPool);
-    console.log('✅ PostgreSQL connected successfully');
+    logger.info('PostgreSQL connected successfully');
     return true;
   } catch (error) {
-    console.error('❌ PostgreSQL connection failed:', error.message);
+    logger.error('PostgreSQL connection failed', { error: error.message });
     setDbPool(null);
-    if (dbPool) {
-      await dbPool.end().catch(() => {});
-      dbPool = null;
-    }
+    dbPool = null;
     return false;
   }
 }
@@ -51,8 +62,11 @@ function createRedisStub() {
   return {
     get: async () => null,
     set: async () => 'OK',
+    setEx: async () => 'OK',
     del: async () => 1,
-    quit: async () => undefined
+    ping: async () => 'PONG',
+    quit: async () => undefined,
+    sendCommand: () => Promise.resolve()
   };
 }
 
@@ -62,7 +76,7 @@ async function initializeRedis() {
   if (disableRedis) {
     redisClient = createRedisStub();
     setRedisClient(redisClient);
-    console.log('ℹ️  Redis disabled via DISABLE_REDIS=1 (using stub)');
+    logger.info('Redis disabled via DISABLE_REDIS=1 (using stub)');
     return false;
   }
 
@@ -77,17 +91,17 @@ async function initializeRedis() {
     });
 
     redisClient.on('error', (err) => {
-      console.warn('[redis] error:', err?.message || err);
+      logger.warn('Redis error', { error: err?.message || err });
     });
 
     await redisClient.connect();
     await redisClient.ping();
 
     setRedisClient(redisClient);
-    console.log(`✅ Redis connected to ${redisUrl}`);
+    logger.info('Redis connected', { url: redisUrl });
     return true;
   } catch (error) {
-    console.warn('[redis] unavailable, falling back to stub:', error?.message || error);
+    logger.warn('Redis unavailable, falling back to stub', { error: error?.message || error });
     redisClient = createRedisStub();
     setRedisClient(redisClient);
     return false;
@@ -95,30 +109,40 @@ async function initializeRedis() {
 }
 
 async function gracefulShutdown(signal) {
-  console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
+  logger.info('Starting graceful shutdown', { signal });
 
   const shutdownTimeout = setTimeout(() => {
-    console.error('❌ Forced shutdown after timeout');
+    logger.error('Forced shutdown after timeout');
     process.exit(1);
   }, 30000);
 
   try {
+    // Close Socket.IO connections
+    if (socketIO) {
+      await shutdownSocket();
+      logger.info('Socket.IO closed');
+      socketIO = null;
+    }
+
+    // Close HTTP server
     if (serverInstance) {
       await new Promise((resolve, reject) => {
         serverInstance.close((err) => (err ? reject(err) : resolve()));
       });
-      console.log('🛑 HTTP server closed');
+      logger.info('HTTP server closed');
     }
 
+    // Close database connections
     if (dbPool) {
-      await dbPool.end();
-      console.log('📊 Database pool closed');
+      await shutdownDatabase();
+      logger.info('Database pool closed');
       dbPool = null;
     }
 
-    if (redisClient) {
+    // Close Redis connections
+    if (redisClient && typeof redisClient.quit === 'function') {
       await redisClient.quit();
-      console.log('🔴 Redis connection closed');
+      logger.info('Redis connection closed');
       redisClient = null;
     }
 
@@ -126,10 +150,10 @@ async function gracefulShutdown(signal) {
     setRedisClient(null);
 
     clearTimeout(shutdownTimeout);
-    console.log('✅ Graceful shutdown completed');
+    logger.info('Graceful shutdown completed');
     process.exit(0);
   } catch (error) {
-    console.error('❌ Error during shutdown:', error);
+    logger.error('Error during shutdown', { error: error.message });
     clearTimeout(shutdownTimeout);
     process.exit(1);
   }
@@ -145,50 +169,74 @@ function registerShutdownHandlers() {
   process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
   process.on('SIGINT', () => gracefulShutdown('SIGINT'));
   process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    logger.error('Unhandled Rejection', { reason, promise });
   });
   process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err);
+    logger.error('Uncaught Exception', { error: err.message, stack: err.stack });
     gracefulShutdown('UNCAUGHT_EXCEPTION');
   });
 }
 
 export async function startServer() {
   try {
-    console.log(`🚀 Starting MANGU Server v${process.env.npm_package_version || '1.0.0'}`);
-    console.log(`📊 Environment: ${NODE_ENV}`);
+    logger.info('Starting MANGU Server', {
+      version: process.env.npm_package_version || '1.0.0',
+      environment: NODE_ENV,
+      nodeVersion: process.version
+    });
 
     const dbConnected = await initializeDatabase();
     const redisConnected = await initializeRedis();
 
     if (!dbConnected) {
-      console.error('❌ Cannot start server without database connection');
-      process.exit(1);
+      if (devAllowsNoDb()) {
+        logger.warn('[dev-no-db] PostgreSQL unavailable but DEV_ALLOW_NO_DB=1. Continuing without a database connection.');
+        logger.warn('[dev-no-db] Expect 503/500 responses from DB-backed APIs. This mode is for UI smoke tests only.');
+      } else {
+        logger.error('Cannot start server without database connection');
+        logger.error('Ensure LOCAL PostgreSQL is running and DATABASE_URL points at it (e.g. postgresql://postgres:[password]@localhost:5432/mangu_dev)');
+        process.exit(1);
+      }
     }
 
     if (!redisConnected) {
-      console.warn('⚠️  Starting without Redis (caching disabled)');
+      logger.warn('Starting without Redis (caching disabled)');
     }
 
     serverInstance = app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 MANGU server running on port ${PORT}`);
-      console.log(`📚 Health check: http://localhost:${PORT}/api/health`);
-      console.log(`📖 API docs: http://localhost:${PORT}/api/docs`);
+      logger.info('MANGU server started', {
+        port: PORT,
+        healthCheck: `http://localhost:${PORT}/api/health`,
+        apiDocs: `http://localhost:${PORT}/api/docs`
+      });
 
       if (NODE_ENV === 'development') {
-        console.log(`\n🔧 Development endpoints:`);
-        console.log(`   Frontend: http://localhost:5173`);
-        console.log(`   Database: http://localhost:8080 (Adminer)`);
-        console.log(`   Mail: http://localhost:8025 (MailHog)`);
+        logger.info('Development endpoints', {
+          frontend: 'http://localhost:5174',
+          database: 'http://localhost:8080 (Adminer)',
+          mail: 'http://localhost:8025 (MailHog)'
+        });
       }
     });
 
+    // Initialize Socket.IO
+    if (process.env.ENABLE_WEBSOCKET !== 'false') {
+      socketIO = initializeSocket(serverInstance, {
+        cors: {
+          origin: process.env.CLIENT_URL || 'http://localhost:5174',
+          methods: ['GET', 'POST'],
+          credentials: true
+        }
+      });
+      logger.info('Socket.IO initialized');
+    }
+
     serverInstance.on('error', (err) => {
       if (err.code === 'EADDRINUSE') {
-        console.error(`❌ Port ${PORT} is already in use`);
+        logger.error('Port already in use', { port: PORT });
         process.exit(1);
       } else {
-        console.error('❌ Server error:', err);
+        logger.error('Server error', { error: err.message });
         process.exit(1);
       }
     });
@@ -197,7 +245,7 @@ export async function startServer() {
 
     return serverInstance;
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    logger.error('Failed to start server', { error: error.message, stack: error.stack });
     process.exit(1);
   }
 }

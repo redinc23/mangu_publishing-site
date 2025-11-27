@@ -1,6 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Netflix+Sans:wght@300;400;700;800&display=swap');
 @import './styles/design-system.css';
+@import './styles/animations.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   font-family: 'Netflix Sans','Helvetica Neue',Helvetica,Arial,sans-serif;
@@ -50,4 +55,71 @@ input, select, textarea {
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   border: 0;
+}
+
+/* Skip link for keyboard navigation */
+.skip-link {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.skip-link:focus {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  background: #667eea;
+  color: white;
+  padding: 0.75rem 1rem;
+  text-decoration: none;
+  border-radius: 0 0 4px 0;
+  z-index: 100;
+}
+
+/* Focus visible styles for keyboard navigation */
+.focus-visible:focus {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+*:focus:not(.focus-visible) {
+  outline: none;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .btn,
+  button,
+  a {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Print styles for accessibility */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  a[href]::after {
+    content: " (" attr(href) ")";
+  }
 }

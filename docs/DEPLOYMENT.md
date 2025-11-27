@@ -4,9 +4,9 @@
 
 - AWS Account with appropriate permissions
 - Terraform >= 1.5.0
-- Docker installed locally
 - AWS CLI configured
 - GitHub repository with secrets configured
+- Note: Docker images are built automatically by CI/CD pipeline
 
 ## Quick Deploy
 
@@ -46,7 +46,11 @@ git push origin main
 
 ## Manual Deployment
 
-### Build Docker Images
+> **Note**: Docker images are automatically built and pushed by the CI/CD pipeline. Manual builds are typically not needed unless debugging deployment issues.
+
+### Build Docker Images (Optional - for debugging)
+
+If you need to build images manually (requires Docker):
 
 ```bash
 # Build server
@@ -58,7 +62,7 @@ docker build -t mangu-client:latest \
   -f Dockerfile.client .
 ```
 
-### Push to ECR
+### Push to ECR (Optional - for debugging)
 
 ```bash
 # Login to ECR
@@ -181,3 +185,10 @@ For issues, check:
 2. ECS Service Events
 3. ALB Target Health
 4. RDS Connection Status
+
+## Related Documentation
+
+- [CI/CD Pipeline Details](./ci-cd-pipeline-upgrade.md) - Build, test, and deployment automation
+- [Backup & Disaster Recovery](./runbooks/backup-and-dr.md) - Backup procedures and DR runbook
+- [Rollback Procedures](./runbooks/rollback.md) - Manual and automatic rollback
+- [Cost Monitoring](./COST_MONITORING_GUIDE.md) - Infrastructure cost tracking

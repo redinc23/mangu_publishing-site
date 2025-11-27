@@ -2,18 +2,45 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import morgan from 'morgan';
 import dotenv from 'dotenv';
+import * as Sentry from '@sentry/node';
 import { formatBook } from './utils/formatBook.js';
 import { normalizeAuthors } from './utils/normalizeAuthors.js';
 import notionService from './services/notion.js';
+import logger, { correlationIdMiddleware, requestLogger } from './utils/logger.js';
+import { createRateLimiter, createStrictRateLimiter } from './middleware/rateLimiter.js';
+import healthRouter from './routes/health.js';
+import usersRouter from './routes/users.js';
+import paymentsRouter from './payments/stripe.routes.js';
+import adminRouter from './features/admin/admin.router.js';
+import cartRouter from './features/cart/cart.router.js';
+import libraryRouter from './features/library/library.router.js';
+import { authCognito } from './middleware/authCognito.js';
+import {
+    UUID_REGEX,
+    BOOK_WITH_RELATIONS_QUERY,
+    fetchBookWithRelations,
+    sanitizeAuthorNames,
+    attachAuthorsToBook,
+    replaceBookAuthors,
+    parseOptionalBoolean
+} from './features/books/bookHelpers.js';
+import { validateEnv } from './config/validateEnv.js';
+import 'express-async-errors';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from server/.env
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+dotenv.config({ path: join(__dirname, '../.env') });
+
+// Validate required environment variables
+validateEnv();
 
 export const app = express();
+
 const NODE_ENV = process.env.NODE_ENV || 'development';
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 app.locals.db = null;
 app.locals.redis = null;
@@ -26,103 +53,71 @@ export function setRedisClient(client) {
     app.locals.redis = client ?? null;
 }
 
-const BOOK_WITH_RELATIONS_QUERY = `
-    SELECT b.*,
-           array_agg(DISTINCT c.name) as categories,
-           array_agg(DISTINCT a.name) as authors,
-           p.name as publisher_name
-    FROM books b
-    LEFT JOIN book_categories bc ON b.id = bc.book_id
-    LEFT JOIN categories c ON bc.category_id = c.id
-    LEFT JOIN book_authors ba ON b.id = ba.book_id
-    LEFT JOIN authors a ON ba.author_id = a.id
-    LEFT JOIN publishers p ON b.publisher_id = p.id
-    WHERE b.id = $1 AND b.is_active = true
-    GROUP BY b.id, p.name
-`;
+const hasCognitoAdminConfig = Boolean(
+    process.env.COGNITO_REGION &&
+    process.env.COGNITO_USER_POOL_ID &&
+    process.env.COGNITO_APP_CLIENT_ID
+);
 
-async function fetchBookWithRelations(dbPool, bookId) {
-    if (!dbPool) {
-        return null;
+const ADMIN_ROLE_NAMES = new Set(['admin', 'administrator', 'super-admin']);
+
+function toStringArray(value) {
+    if (!value) {
+        return [];
     }
-
-    const result = await dbPool.query(BOOK_WITH_RELATIONS_QUERY, [bookId]);
-    return result.rows[0] || null;
-}
-
-function sanitizeAuthorNames(authorNames) {
-    return Array.from(
-        new Set(
-            (authorNames || [])
-                .map((name) => (typeof name === 'string' ? name.trim() : ''))
-                .filter(Boolean)
-        )
-    );
-}
-
-async function attachAuthorsToBook(dbPool, bookId, authorNames) {
-    if (!dbPool) {
-        return;
+    if (Array.isArray(value)) {
+        return value
+            .map((entry) => (typeof entry === 'string' ? entry.trim() : entry))
+            .filter(Boolean);
     }
-
-    const names = sanitizeAuthorNames(authorNames);
-
-    for (const name of names) {
-        const existing = await dbPool.query(
-            'SELECT id FROM authors WHERE LOWER(name) = LOWER($1) LIMIT 1',
-            [name]
-        );
-
-        let authorId;
-        if (existing.rows.length > 0) {
-            authorId = existing.rows[0].id;
-        } else {
-            const inserted = await dbPool.query(
-                'INSERT INTO authors (name) VALUES ($1) RETURNING id',
-                [name]
-            );
-            authorId = inserted.rows[0].id;
-        }
-
-        await dbPool.query(
-            `INSERT INTO book_authors (book_id, author_id, role)
-             VALUES ($1, $2, 'author')
-             ON CONFLICT DO NOTHING`,
-            [bookId, authorId]
-        );
-    }
-}
-
-async function replaceBookAuthors(dbPool, bookId, authorNames) {
-    if (!dbPool) {
-        return;
-    }
-
-    await dbPool.query('DELETE FROM book_authors WHERE book_id = $1', [bookId]);
-    await attachAuthorsToBook(dbPool, bookId, authorNames);
-}
-
-function parseOptionalBoolean(value) {
-    if (value === undefined) {
-        return undefined;
-    }
-
-    if (typeof value === 'boolean') {
-        return value;
-    }
-
     if (typeof value === 'string') {
-        const normalized = value.trim().toLowerCase();
-        if (['true', '1', 'yes', 'y'].includes(normalized)) {
-            return true;
-        }
-        if (['false', '0', 'no', 'n'].includes(normalized)) {
-            return false;
-        }
-        return Boolean(normalized);
+        return value
+            .split(',')
+            .map((entry) => entry.trim())
+            .filter(Boolean);
     }
+    return [];
+}
 
-    return Boolean(value);
+function collectRequestRoles(req) {
+    const roles = new Set();
+
+    const authPayload = req.auth?.payload;
+    toStringArray(authPayload?.['cognito:groups']).forEach((role) => roles.add(role));
+    toStringArray(authPayload?.groups).forEach((role) => roles.add(role));
+    toStringArray(req.auth?.groups).forEach((role) => roles.add(role));
+    toStringArray(req.user?.groups).forEach((role) => roles.add(role));
+
+    return Array.from(roles);
+}
+
+function requestHasAdminRole(req) {
+    const roles = collectRequestRoles(req);
+    if (roles.length > 0) {
+        req.adminRoles = roles;
+    }
+    return roles.some((role) => ADMIN_ROLE_NAMES.has(role.toLowerCase()));
+}
+
+function createAdminAuthMiddleware() {
+    const cognitoMiddleware = authCognito();
+    return (req, res, next) => {
+        cognitoMiddleware(req, res, () => {
+            if (requestHasAdminRole(req)) {
+                req.isAdmin = true;
+                return next();
+            }
+            return res.status(403).json({ error: 'Admin access required' });
+        });
+    };
+}
+
+const adminAuthMiddleware = createAdminAuthMiddleware();
+
+
+// Sentry request handler must be first
+if (process.env.SENTRY_DSN) {
+    app.use(Sentry.Handlers.requestHandler());
 }
 
 // Enhanced security middleware
@@ -145,14 +140,9 @@ app.use(helmet({
     }
 }));
 
-// Request logging
-if (NODE_ENV === 'development') {
-    app.use(morgan('combined'));
-} else {
-    app.use(morgan('combined', {
-        skip: (req, res) => res.statusCode < 400
-    }));
-}
+// Correlation ID and structured logging middleware
+app.use(correlationIdMiddleware);
+app.use(requestLogger);
 
 // Performance middleware
 app.use(compression());
@@ -170,109 +160,137 @@ app.use(express.urlencoded({
 }));
 
 // CORS configuration
-const corsOrigins = process.env.CORS_ORIGINS 
-    ? process.env.CORS_ORIGINS.split(',')
-    : ['http://localhost:5173', 'http://localhost:3000'];
+// Support both CORS_ORIGINS (plural) and CORS_ORIGIN (singular) for compatibility
+const corsOriginsEnv = process.env.CORS_ORIGINS || process.env.CORS_ORIGIN;
+const defaultOrigins = [
+    'http://localhost:5179',
+    'http://localhost:3009',
+    'http://127.0.0.1:5179',
+    'http://127.0.0.1:3009',
+    'http://0.0.0.0:5179',
+    'http://0.0.0.0:3009'
+];
+const corsOrigins = corsOriginsEnv
+    ? corsOriginsEnv.split(',').map(origin => origin.trim()).filter(Boolean)
+    : defaultOrigins;
+
+const corsOriginPatterns = [
+    /^https?:\/\/localhost(?::\d+)?$/i,
+    /^https?:\/\/127\.0\.0\.1(?::\d+)?$/i,
+    /^https?:\/\/0\.0\.0\.0(?::\d+)?$/i,
+    /^https?:\/\/.*\.repl\.co$/i,
+    /^https?:\/\/.*\.id\.repl\.co$/i
+];
 
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || corsOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
+        if (!origin) {
+            return callback(null, true);
         }
+
+        const isExactMatch = corsOrigins.includes(origin);
+        const isPatternMatch = corsOriginPatterns.some((pattern) => pattern.test(origin));
+
+        if (isExactMatch || isPatternMatch) {
+            return callback(null, true);
+        }
+
+        if (NODE_ENV !== 'production') {
+            logger.warn('CORS dev fallback - allowing unmatched origin', { origin });
+            return callback(null, true);
+        }
+
+        logger.warn('CORS blocked origin', { origin });
+        return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-Requested-With',
+        'X-Correlation-Id',
+        'X-Request-Id'
+    ],
+    exposedHeaders: ['X-Correlation-Id']
 }));
 
 // Trust proxy for production deployments
 app.set('trust proxy', true);
 
-// Rate limiting
-import rateLimit from 'express-rate-limit';
-
-const generalLimiter = rateLimit({
-    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW) || 15 * 60 * 1000,
-    max: parseInt(process.env.RATE_LIMIT_MAX) || 100,
-    message: {
-        error: 'Too many requests from this IP, please try again later.',
-        retryAfter: Math.ceil((parseInt(process.env.RATE_LIMIT_WINDOW) || 900000) / 60000)
-    },
-    standardHeaders: true,
-    legacyHeaders: false
+// Rate limiting - lazy initialization to use Redis once available
+let apiRateLimiter = null;
+app.use('/api/', (req, res, next) => {
+    if (!apiRateLimiter) {
+        apiRateLimiter = createRateLimiter(req.app.locals.redis);
+    }
+    apiRateLimiter(req, res, next);
 });
 
-app.use('/api/', generalLimiter);
+// Health check routes (comprehensive monitoring endpoints)
+app.use('/api', healthRouter);
+app.use('/', healthRouter);
 
-// Enhanced health check endpoint
-app.get('/api/health', async (req, res) => {
-    const health = {
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        version: process.env.npm_package_version || '1.0.0',
-        environment: NODE_ENV,
-        uptime: process.uptime(),
-        memory: process.memoryUsage(),
-        services: {
-            database: 'unknown',
-            redis: 'unknown'
-        }
-    };
+// Payments routes (Stripe checkout)
+app.use('/api/payments', paymentsRouter);
 
+// Admin routes (protected)
+app.use('/api/admin', adminAuthMiddleware, adminRouter);
+
+// Cart routes (protected with authCognito middleware)
+app.use('/api/cart', cartRouter);
+
+// Library routes (protected with authCognito middleware)
+app.use('/api/library', libraryRouter);
+
+// User profile routes
+app.use('/api/users', usersRouter);
+
+// Reviews API endpoint
+app.get('/api/books/:id/reviews', async (req, res) => {
     try {
         const dbPool = req.app.locals.db;
-        const redisClient = req.app.locals.redis;
-
-        // Check database
-        if (dbPool) {
-            if (typeof dbPool.connect === 'function') {
-                const client = await dbPool.connect();
-                await client.query('SELECT 1');
-                client.release();
-            } else if (typeof dbPool.query === 'function') {
-                await dbPool.query('SELECT 1');
-            }
-            health.services.database = 'healthy';
-        } else {
-            health.services.database = 'disconnected';
+        if (!dbPool) {
+            return res.status(503).json({ error: 'Database unavailable' });
         }
 
-        // Check Redis
-        if (redisClient && typeof redisClient.ping === 'function') {
-            await redisClient.ping();
-            health.services.redis = 'healthy';
-        } else {
-            health.services.redis = 'disconnected';
-        }
+        const bookId = req.params.id;
+        const limit = Math.min(parseInt(req.query.limit) || 10, 50);
+        const offset = Math.max(parseInt(req.query.offset) || 0, 0);
 
-        // Determine overall status
-        const unhealthyServices = Object.values(health.services)
-            .filter(status => status !== 'healthy').length;
-        
-        if (unhealthyServices === 0) {
-            health.status = 'healthy';
-            res.status(200);
-        } else if (unhealthyServices === Object.keys(health.services).length) {
-            health.status = 'critical';
-            res.status(503);
-        } else {
-            health.status = 'degraded';
-            res.status(200);
-        }
+        const query = `
+            SELECT r.*, u.username, u.full_name, u.avatar_url
+            FROM reviews r
+            LEFT JOIN users u ON r.user_id = u.id
+            WHERE r.book_id = $1 AND r.is_approved = true
+            ORDER BY r.created_at DESC, r.helpful_votes DESC
+            LIMIT $2 OFFSET $3
+        `;
 
-        res.json(health);
+        const result = await dbPool.query(query, [bookId, limit, offset]);
+        const reviews = result.rows.map(row => ({
+            id: row.id,
+            rating: row.rating,
+            title: row.title,
+            content: row.content,
+            author: {
+                name: row.full_name || row.username || 'Anonymous',
+                username: row.username,
+                avatarUrl: row.avatar_url
+            },
+            isVerifiedPurchase: row.is_verified_purchase,
+            helpfulVotes: row.helpful_votes || 0,
+            createdAt: row.created_at
+        }));
+
+        res.json(reviews);
     } catch (error) {
-        health.status = 'unhealthy';
-        health.error = error.message;
-        res.status(503).json(health);
+        console.error('Reviews query error:', error);
+        res.status(500).json({
+            error: 'Failed to fetch reviews',
+            message: NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
     }
-});
-
-// Simple health check for load balancers
-app.get('/health', (req, res) => {
-    res.status(200).send('OK');
 });
 
 // Books API with enhanced error handling and caching
@@ -853,15 +871,261 @@ app.get('/api/categories', async (req, res) => {
     }
 });
 
+// GET /api/genres/:id - Get books by genre/category
+app.get('/api/genres/:id', async (req, res) => {
+    try {
+        const dbPool = req.app.locals.db;
+        if (!dbPool) {
+            return res.status(503).json({ error: 'Database unavailable' });
+        }
+
+        const { id } = req.params;
+        const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+        const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+
+        // Check if id is UUID or slug
+        const isUUID = UUID_REGEX.test(id);
+        const categoryQuery = isUUID
+            ? 'c.id = $1'
+            : 'c.slug = $1';
+
+        const query = `
+            SELECT DISTINCT b.*,
+                   array_agg(DISTINCT c.name) as categories,
+                   array_agg(DISTINCT a.name) as authors
+            FROM books b
+            INNER JOIN book_categories bc ON b.id = bc.book_id
+            INNER JOIN categories c ON bc.category_id = c.id
+            LEFT JOIN book_authors ba ON b.id = ba.book_id
+            LEFT JOIN authors a ON ba.author_id = a.id
+            WHERE b.is_active = true AND ${categoryQuery}
+            GROUP BY b.id
+            ORDER BY b.rating DESC, b.created_at DESC
+            LIMIT $2 OFFSET $3
+        `;
+
+        const result = await dbPool.query(query, [id, limit, offset]);
+        const books = result.rows.map(formatBook);
+
+        res.json({
+            books,
+            pagination: {
+                limit,
+                offset,
+                total: result.rowCount
+            }
+        });
+    } catch (error) {
+        console.error('Genre books query error:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch genre books',
+            message: NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
+
+// GET /api/series/:id - Get books in a series (using tags/metadata for now)
+app.get('/api/series/:id', async (req, res) => {
+    try {
+        const dbPool = req.app.locals.db;
+        if (!dbPool) {
+            return res.status(503).json({ error: 'Database unavailable' });
+        }
+
+        const { id } = req.params;
+        const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+        const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+
+        // For now, use tags or metadata to find series books
+        // In the future, this could use a dedicated series table
+        const query = `
+            SELECT DISTINCT b.*,
+                   array_agg(DISTINCT c.name) as categories,
+                   array_agg(DISTINCT a.name) as authors
+            FROM books b
+            LEFT JOIN book_categories bc ON b.id = bc.book_id
+            LEFT JOIN categories c ON bc.category_id = c.id
+            LEFT JOIN book_authors ba ON b.id = ba.book_id
+            LEFT JOIN authors a ON ba.author_id = a.id
+            WHERE b.is_active = true 
+              AND (
+                $1 = ANY(b.tags) 
+                OR b.metadata->>'series_id' = $1
+                OR b.metadata->>'series_name' ILIKE '%' || $1 || '%'
+              )
+            GROUP BY b.id
+            ORDER BY 
+              COALESCE((b.metadata->>'series_order')::INTEGER, 0) ASC,
+              b.publication_date ASC,
+              b.created_at ASC
+            LIMIT $2 OFFSET $3
+        `;
+
+        const result = await dbPool.query(query, [id, limit, offset]);
+        const books = result.rows.map(formatBook);
+
+        res.json({
+            books,
+            pagination: {
+                limit,
+                offset,
+                total: result.rowCount
+            }
+        });
+    } catch (error) {
+        console.error('Series books query error:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch series books',
+            message: NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
+
+// GET /api/wishlists/:id - Get a wishlist by ID
+app.get('/api/wishlists/:id', async (req, res) => {
+    try {
+        const dbPool = req.app.locals.db;
+        if (!dbPool) {
+            return res.status(503).json({ error: 'Database unavailable' });
+        }
+
+        const { id } = req.params;
+
+        // Get wishlist details
+        const wishlistQuery = `
+            SELECT w.*, u.username, u.full_name
+            FROM wishlists w
+            LEFT JOIN users u ON w.user_id = u.id
+            WHERE w.id = $1
+        `;
+
+        const wishlistResult = await dbPool.query(wishlistQuery, [id]);
+        
+        if (wishlistResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Wishlist not found' });
+        }
+
+        const wishlist = wishlistResult.rows[0];
+
+        // Get wishlist items
+        const itemsQuery = `
+            SELECT b.*,
+                   array_agg(DISTINCT c.name) as categories,
+                   array_agg(DISTINCT a.name) as authors,
+                   wi.added_at
+            FROM wishlist_items wi
+            INNER JOIN books b ON wi.book_id = b.id
+            LEFT JOIN book_categories bc ON b.id = bc.book_id
+            LEFT JOIN categories c ON bc.category_id = c.id
+            LEFT JOIN book_authors ba ON b.id = ba.book_id
+            LEFT JOIN authors a ON ba.author_id = a.id
+            WHERE wi.wishlist_id = $1 AND b.is_active = true
+            GROUP BY b.id, wi.added_at
+            ORDER BY wi.added_at DESC
+        `;
+
+        const itemsResult = await dbPool.query(itemsQuery, [id]);
+        const items = itemsResult.rows.map(row => ({
+            ...formatBook(row),
+            addedAt: row.added_at
+        }));
+
+        res.json({
+            ...wishlist,
+            items,
+            itemCount: items.length
+        });
+    } catch (error) {
+        console.error('Wishlist query error:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch wishlist',
+            message: NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
+
+// GET /api/reading-sessions/:id - Get a reading session by ID
+app.get('/api/reading-sessions/:id', async (req, res) => {
+    try {
+        const dbPool = req.app.locals.db;
+        if (!dbPool) {
+            return res.status(503).json({ error: 'Database unavailable' });
+        }
+
+        const { id } = req.params;
+
+        const query = `
+            SELECT rs.*,
+                   b.title as book_title,
+                   b.cover_url as book_cover,
+                   u.username,
+                   u.full_name
+            FROM reading_sessions rs
+            LEFT JOIN books b ON rs.book_id = b.id
+            LEFT JOIN users u ON rs.user_id = u.id
+            WHERE rs.id = $1
+        `;
+
+        const result = await dbPool.query(query, [id]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Reading session not found' });
+        }
+
+        const session = result.rows[0];
+
+        res.json({
+            id: session.id,
+            userId: session.user_id,
+            bookId: session.book_id,
+            bookTitle: session.book_title,
+            bookCover: session.book_cover,
+            startedAt: session.started_at,
+            endedAt: session.ended_at,
+            durationMinutes: session.duration_minutes,
+            pagesRead: session.pages_read,
+            progressStart: session.progress_start,
+            progressEnd: session.progress_end,
+            deviceType: session.device_type,
+            user: {
+                username: session.username,
+                fullName: session.full_name
+            }
+        });
+    } catch (error) {
+        console.error('Reading session query error:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch reading session',
+            message: NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({
+        error: 'Route not found',
+        path: req.path,
+        method: req.method,
+        suggestion: 'Check the API documentation for available endpoints'
+    });
+});
+
+// Sentry error handler must be before other error handlers
+if (process.env.SENTRY_DSN) {
+    app.use(Sentry.Handlers.errorHandler());
+}
+
 // Enhanced error handling middleware
 app.use((err, req, res, next) => {
-    console.error('Unhandled error:', {
+    logger.error('Unhandled error', {
         error: err.message,
         stack: err.stack,
         path: req.path,
         method: req.method,
         ip: req.ip,
-        userAgent: req.get('User-Agent')
+        userAgent: req.get('User-Agent'),
+        component: 'error-handler'
     });
 
     // Handle specific error types
@@ -1046,16 +1310,6 @@ app.get('/api/notion/status', async (req, res) => {
             message: NODE_ENV === 'development' ? error.message : 'Internal server error'
         });
     }
-});
-
-// 404 handler
-app.use((req, res) => {
-    res.status(404).json({
-        error: 'Route not found',
-        path: req.path,
-        method: req.method,
-        suggestion: 'Check the API documentation for available endpoints'
-    });
 });
 
 export { NODE_ENV };

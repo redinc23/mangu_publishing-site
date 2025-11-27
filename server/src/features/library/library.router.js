@@ -1,7 +1,11 @@
 import { Router } from 'express';
+import { authCognito } from '../../middleware/authCognito.js';
 import { getLibrary, addToLibrary } from './library.controller.js';
 
 const router = Router();
+
+// All library routes require authentication
+router.use(authCognito());
 
 // GET /api/library - retrieve user's library
 router.get('/', getLibrary);

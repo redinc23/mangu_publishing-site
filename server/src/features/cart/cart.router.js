@@ -1,7 +1,11 @@
 import { Router } from 'express';
+import { authCognito } from '../../middleware/authCognito.js';
 import { getCart, addToCart, removeFromCart, clearCart } from './cart.controller.js';
 
 const router = Router();
+
+// All cart routes require authentication
+router.use(authCognito());
 
 // GET /api/cart - get current cart items
 router.get('/', getCart);
