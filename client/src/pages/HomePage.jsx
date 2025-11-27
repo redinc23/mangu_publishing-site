@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { LibraryContext } from '../context/LibraryContext';
+import { SkeletonLoader } from '../components/common';
+import showToast from '../lib/toast';
 import './HomePage.css';
 
 function HomePage() {
@@ -96,14 +98,12 @@ function HomePage() {
 
   const handleAddToCart = (bookId) => {
     addToCart(bookId);
-    // Optional: Show toast notification
-    console.log('Added to cart:', bookId);
+    showToast.success('Added to cart!');
   };
 
   const handleAddToLibrary = (bookId) => {
     addToLibrary(bookId);
-    // Optional: Show toast notification
-    console.log('Added to library:', bookId);
+    showToast.success('Added to library!');
   };
 
   return (
@@ -153,7 +153,7 @@ function HomePage() {
         <div className="container">
           <h2 className="header">Featured This Week</h2>
           {loading ? (
-            <div className="loading-spinner">Loading amazing books...</div>
+            <SkeletonLoader count={1} type="book-details" />
           ) : featuredBook ? (
             <div className="feature-card">
               <div className="book-cover">
@@ -262,7 +262,7 @@ function HomePage() {
           </button>
           <div className="carousel-track">
             {loading ? (
-              <div className="loading-spinner">Loading...</div>
+              <SkeletonLoader count={6} type="book-card" />
             ) : trendingBooks.length > 0 ? (
               trendingBooks.map((book) => (
                 <div
@@ -333,7 +333,7 @@ function HomePage() {
         <div className="books-container">
           <div className="books-row">
             {loading ? (
-              <div className="loading-spinner">Loading...</div>
+              <SkeletonLoader count={8} type="book-card" />
             ) : newReleases.length > 0 ? (
               newReleases.map((book) => (
                 <div className="book-card" key={book.id}>

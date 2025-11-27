@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { validateEmail, validatePassword, validateName, validateForm } from '../lib/validation';
+import showToast from '../lib/toast';
 import './SignInPage.css';
 
 const MODE = {
@@ -22,6 +24,7 @@ function SignInPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     if (location.pathname.includes('signup')) {
@@ -46,20 +49,60 @@ function SignInPage() {
 
   const handleSignIn = async (event) => {
     event.preventDefault();
+
+    // Validate form
+    const validationResult = validateForm(formState, {
+      email: (value) => validateEmail(value),
+      password: (value) => {
+        if (!value) return { valid: false, error: 'Password is required' };
+        return { valid: true, error: '' };
+      },
+    });
+
+    if (!validationResult.valid) {
+      setFormErrors(validationResult.errors);
+      showToast.error('Please fix the errors in the form');
+      return;
+    }
+
+    setFormErrors({});
     setLoading(true);
     setError('');
     const result = await signIn(formState.email, formState.password);
     if (result.success) {
       setSuccess('Welcome back to MANGU.');
+      showToast.success('Signed in successfully!');
       setTimeout(() => navigate('/profile'), 800);
     } else {
       setError(result.error || 'Unable to sign in. Please try again.');
+      showToast.error(result.error || 'Unable to sign in');
     }
     setLoading(false);
   };
 
   const handleSignUp = async (event) => {
     event.preventDefault();
+
+    // Validate form
+    const validationResult = validateForm(formState, {
+      name: (value) => validateName(value),
+      email: (value) => validateEmail(value),
+      password: (value) => validatePassword(value, {
+        minLength: 8,
+        requireUppercase: false,
+        requireLowercase: false,
+        requireNumber: false,
+        requireSpecial: false
+      }),
+    });
+
+    if (!validationResult.valid) {
+      setFormErrors(validationResult.errors);
+      showToast.error('Please fix the errors in the form');
+      return;
+    }
+
+    setFormErrors({});
     setLoading(true);
     setError('');
     const result = await signUp(formState.email, formState.password, formState.name);
@@ -67,23 +110,33 @@ function SignInPage() {
       setPendingEmail(formState.email);
       setMode(MODE.CONFIRM);
       setSuccess('We sent you a verification code. Enter it below to activate your account.');
+      showToast.success('Account created! Check your email for verification code.');
     } else {
       setError(result.error || 'Unable to create account. Please try again.');
+      showToast.error(result.error || 'Unable to create account');
     }
     setLoading(false);
   };
 
   const handleConfirm = async (event) => {
     event.preventDefault();
+
+    if (!confirmCode || confirmCode.trim() === '') {
+      showToast.error('Please enter the verification code');
+      return;
+    }
+
     setLoading(true);
     setError('');
     const emailToConfirm = pendingEmail || formState.email;
     const result = await confirmSignUp(emailToConfirm, confirmCode);
     if (result.success) {
       setSuccess('Account confirmed! You can now sign in.');
+      showToast.success('Account confirmed! You can now sign in.');
       setMode(MODE.SIGN_IN);
     } else {
       setError(result.error || 'Verification failed. Check your code and try again.');
+      showToast.error(result.error || 'Verification failed');
     }
     setLoading(false);
   };
@@ -102,6 +155,11 @@ function SignInPage() {
               onChange={handleInputChange}
               required
             />
+            {formErrors.name && (
+              <span style={{ color: '#ef4444', fontSize: '14px', marginTop: '4px', display: 'block' }}>
+                {formErrors.name}
+              </span>
+            )}
           </div>
           <div className="form-field">
             <label htmlFor="email">Email</label>
@@ -114,6 +172,11 @@ function SignInPage() {
               onChange={handleInputChange}
               required
             />
+            {formErrors.email && (
+              <span style={{ color: '#ef4444', fontSize: '14px', marginTop: '4px', display: 'block' }}>
+                {formErrors.email}
+              </span>
+            )}
           </div>
           <div className="form-field">
             <label htmlFor="password">Password</label>
@@ -137,6 +200,11 @@ function SignInPage() {
                 <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
               </button>
             </div>
+            {formErrors.password && (
+              <span style={{ color: '#ef4444', fontSize: '14px', marginTop: '4px', display: 'block' }}>
+                {formErrors.password}
+              </span>
+            )}
             <span className="field-hint">8+ characters, one number or symbol recommended.</span>
           </div>
           <button type="submit" className="auth-submit" disabled={loading}>
@@ -190,6 +258,11 @@ function SignInPage() {
             onChange={handleInputChange}
             required
           />
+          {formErrors.email && (
+            <span style={{ color: '#ef4444', fontSize: '14px', marginTop: '4px', display: 'block' }}>
+              {formErrors.email}
+            </span>
+          )}
         </div>
         <div className="form-field">
           <label htmlFor="password">Password</label>
@@ -212,6 +285,11 @@ function SignInPage() {
               <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
             </button>
           </div>
+          {formErrors.password && (
+            <span style={{ color: '#ef4444', fontSize: '14px', marginTop: '4px', display: 'block' }}>
+              {formErrors.password}
+            </span>
+          )}
         </div>
         <div className="form-aux">
           <label className="remember">

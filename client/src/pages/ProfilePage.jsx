@@ -2,6 +2,8 @@ import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LibraryContext } from '../context/LibraryContext';
+import showToast from '../lib/toast';
+import { validateEmail, validateName, validateForm } from '../lib/validation';
 import './ProfilePage.css';
 
 const PREFERENCE_DEFAULTS = {
@@ -50,6 +52,7 @@ function ProfilePage() {
   const [preferences, setPreferences] = useState(PREFERENCE_DEFAULTS);
   const [statusMessage, setStatusMessage] = useState('');
   const [selectedListFilter, setSelectedListFilter] = useState('saved');
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     const defaultTab = TAB_MAP[location.pathname] || 'overview';
@@ -128,13 +131,29 @@ function ProfilePage() {
 
   const handleProfileSubmit = (event) => {
     event.preventDefault();
+
+    // Validate form
+    const validationResult = validateForm(formState, {
+      displayName: (value) => validateName(value, { required: false }),
+      email: (value) => validateEmail(value),
+    });
+
+    if (!validationResult.valid) {
+      setFormErrors(validationResult.errors);
+      showToast.error('Please fix the errors in the form');
+      return;
+    }
+
+    setFormErrors({});
     setStatusMessage('Profile updated. We\'ll sync this across your devices.');
+    showToast.success('Profile updated successfully!');
     setTimeout(() => setStatusMessage(''), 3500);
   };
 
   const handlePreferenceToggle = (key) => {
     setPreferences((prev) => ({ ...prev, [key]: !prev[key] }));
     setStatusMessage('Preferences saved for your next session.');
+    showToast.success('Preferences updated!');
     setTimeout(() => setStatusMessage(''), 3000);
   };
 
@@ -381,6 +400,11 @@ function ProfilePage() {
                   onChange={handleFormChange}
                   placeholder="How people see you on MANGU"
                 />
+                {formErrors.displayName && (
+                  <span style={{ color: '#ef4444', fontSize: '14px', marginTop: '4px' }}>
+                    {formErrors.displayName}
+                  </span>
+                )}
               </div>
               <div className="form-row">
                 <label htmlFor="email">Email</label>
@@ -392,6 +416,11 @@ function ProfilePage() {
                   onChange={handleFormChange}
                   placeholder="name@email.com"
                 />
+                {formErrors.email && (
+                  <span style={{ color: '#ef4444', fontSize: '14px', marginTop: '4px' }}>
+                    {formErrors.email}
+                  </span>
+                )}
               </div>
               <div className="form-row">
                 <label htmlFor="location">Location</label>

@@ -1,6 +1,8 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
+import { SkeletonLoader } from '../components/common';
+import showToast from '../lib/toast';
 import './CartPage.css';
 
 const PROMO_CODES = {
@@ -95,6 +97,7 @@ function CartPage() {
 
     setAppliedPromo(promo);
     setPromoError('');
+    showToast.success(`Promo code applied: ${promo.label}`);
   };
 
   const handleClearPromo = () => {
@@ -109,7 +112,10 @@ function CartPage() {
   };
 
   const handleContinueShopping = () => navigate('/library');
-  const handleRemove = (bookId) => removeFromCart(bookId);
+  const handleRemove = (bookId) => {
+    removeFromCart(bookId);
+    showToast.info('Removed from cart');
+  };
 
   const handleShuffleRecommendations = () => {
     setRecommendations(prev => [...prev].sort(() => Math.random() - 0.5));
@@ -332,8 +338,7 @@ function CartPage() {
 
         {loadingRecommendations ? (
           <div className="recommendations-loading">
-            <div className="spinner" />
-            <p>Collecting stories tailored to you…</p>
+            <SkeletonLoader count={6} type="book-card" />
           </div>
         ) : (
           <div className="recommendations-grid">
@@ -370,6 +375,7 @@ function CartPage() {
                       onClick={(event) => {
                         event.stopPropagation();
                         addToCart(book.id);
+                        showToast.success('Added to cart!');
                       }}
                     >
                       Add to cart

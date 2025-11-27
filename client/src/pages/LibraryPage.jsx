@@ -2,6 +2,8 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { LibraryContext } from '../context/LibraryContext';
+import { SkeletonLoader } from '../components/common';
+import showToast from '../lib/toast';
 import './LibraryPage.css';
 
 
@@ -93,11 +95,13 @@ function LibraryPage() {
   const handleAddToCart = (bookId, e) => {
     e.stopPropagation();
     addToCart(bookId);
+    showToast.success('Added to cart!');
   };
 
   const handleAddToLibrary = (bookId, e) => {
     e.stopPropagation();
     addToLibrary(bookId);
+    showToast.success('Added to library!');
   };
 
   return (
@@ -191,7 +195,7 @@ function LibraryPage() {
 
           {loading ? (
             <div className="library-loading">
-              <div className="loading-spinner">Loading amazing books...</div>
+              <SkeletonLoader count={12} type="book-card" />
             </div>
           ) : filteredBooks.length > 0 ? (
             <div className="books-grid">

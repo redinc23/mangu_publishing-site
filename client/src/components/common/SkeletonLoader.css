@@ -1,0 +1,300 @@
+/* Base skeleton animation */
+@keyframes skeleton-loading {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.skeleton-loader-container {
+  width: 100%;
+}
+
+/* Common skeleton styles */
+[class*="skeleton-"] {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 0px,
+    #e0e0e0 40px,
+    #f0f0f0 80px
+  );
+  background-size: 200px 100%;
+  animation: skeleton-loading 1.2s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  [class*="skeleton-"] {
+    background: linear-gradient(
+      90deg,
+      #2a2a2a 0px,
+      #3a3a3a 40px,
+      #2a2a2a 80px
+    );
+  }
+}
+
+/* Book Card Skeleton */
+.skeleton-book-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0;
+  background: transparent;
+  animation: none;
+}
+
+.skeleton-cover {
+  width: 100%;
+  aspect-ratio: 2/3;
+  border-radius: 8px;
+}
+
+.skeleton-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.skeleton-title {
+  height: 20px;
+  width: 80%;
+  border-radius: 4px;
+}
+
+.skeleton-author {
+  height: 16px;
+  width: 60%;
+  border-radius: 4px;
+}
+
+.skeleton-genres {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.skeleton-genre {
+  height: 24px;
+  width: 60px;
+  border-radius: 12px;
+}
+
+.skeleton-price {
+  height: 18px;
+  width: 50px;
+  border-radius: 4px;
+}
+
+/* Book Details Skeleton */
+.skeleton-book-details {
+  display: flex;
+  gap: 2rem;
+  padding: 2rem;
+  background: transparent;
+  animation: none;
+}
+
+.skeleton-details-cover {
+  width: 300px;
+  height: 450px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.skeleton-details-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.skeleton-details-title {
+  height: 32px;
+  width: 60%;
+  border-radius: 4px;
+}
+
+.skeleton-details-subtitle {
+  height: 24px;
+  width: 50%;
+  border-radius: 4px;
+}
+
+.skeleton-details-author {
+  height: 20px;
+  width: 40%;
+  border-radius: 4px;
+}
+
+.skeleton-details-meta {
+  height: 20px;
+  width: 80%;
+  border-radius: 4px;
+}
+
+.skeleton-details-description {
+  height: 16px;
+  width: 100%;
+  border-radius: 4px;
+}
+
+.skeleton-details-buttons {
+  height: 48px;
+  width: 200px;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+/* Cart Item Skeleton */
+.skeleton-cart-item {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: transparent;
+  animation: none;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.skeleton-cart-cover {
+  width: 120px;
+  height: 180px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.skeleton-cart-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.skeleton-cart-title {
+  height: 24px;
+  width: 70%;
+  border-radius: 4px;
+}
+
+.skeleton-cart-author {
+  height: 18px;
+  width: 50%;
+  border-radius: 4px;
+}
+
+.skeleton-cart-meta {
+  height: 20px;
+  width: 60%;
+  border-radius: 4px;
+}
+
+.skeleton-cart-description {
+  height: 60px;
+  width: 100%;
+  border-radius: 4px;
+}
+
+/* Profile Skeleton */
+.skeleton-profile {
+  display: flex;
+  gap: 2rem;
+  padding: 2rem;
+  background: transparent;
+  animation: none;
+}
+
+.skeleton-profile-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeleton-profile-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.skeleton-profile-name {
+  height: 28px;
+  width: 200px;
+  border-radius: 4px;
+}
+
+.skeleton-profile-email {
+  height: 20px;
+  width: 250px;
+  border-radius: 4px;
+}
+
+.skeleton-profile-stats {
+  height: 80px;
+  width: 100%;
+  border-radius: 8px;
+}
+
+/* Text Skeleton */
+.skeleton-text {
+  height: 20px;
+  width: 100%;
+  border-radius: 4px;
+}
+
+/* Default Skeleton */
+.skeleton-default {
+  height: 100px;
+  width: 100%;
+  border-radius: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .skeleton-book-details {
+    flex-direction: column;
+  }
+
+  .skeleton-details-cover {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 2/3;
+  }
+
+  .skeleton-cart-item {
+    flex-direction: column;
+  }
+
+  .skeleton-cart-cover {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 2/3;
+  }
+
+  .skeleton-profile {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+}
+
+/* Grid layout for multiple book cards */
+.skeleton-loader-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+}
+
+/* Override for cart and profile layouts */
+.skeleton-loader-container:has(.skeleton-cart-item),
+.skeleton-loader-container:has(.skeleton-profile),
+.skeleton-loader-container:has(.skeleton-book-details) {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
