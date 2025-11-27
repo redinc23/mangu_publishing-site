@@ -12,6 +12,9 @@ import stripeRoutes from './payments/stripe.routes.js';
 import cartRoutes from './features/cart/cart.router.js';
 import libraryRoutes from './features/library/library.router.js';
 import authorsRoutes from './features/authors/authors.router.js';
+import wishlistsRoutes from './features/wishlists/wishlists.router.js';
+import readingSessionsRoutes from './features/reading-sessions/reading-sessions.router.js';
+import { authCognito } from './middleware/authCognito.js';
 
 // Load environment variables
 dotenv.config();
@@ -297,6 +300,12 @@ app.use('/api/library', libraryRoutes);
 
 // Authors routes
 app.use('/api/authors', authorsRoutes);
+
+// Wishlists routes (requires auth)
+app.use('/api/wishlists', authCognito(), wishlistsRoutes);
+
+// Reading Sessions routes (requires auth)
+app.use('/api/reading-sessions', authCognito(), readingSessionsRoutes);
 
 // Books API with enhanced error handling and caching
 app.get('/api/books', async (req, res) => {
