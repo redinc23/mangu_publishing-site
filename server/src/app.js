@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import { formatBook } from './utils/formatBook.js';
 import { normalizeAuthors } from './utils/normalizeAuthors.js';
 import authRoutes from './routes/auth.js';
+import usersRoutes from './routes/users.js';
 
 // Load environment variables
 dotenv.config();
@@ -277,6 +278,9 @@ app.get('/health', (req, res) => {
 
 // Auth routes
 app.use('/api/auth', authRoutes);
+
+// Users routes
+app.use('/api/users', usersRoutes);
 
 // Books API with enhanced error handling and caching
 app.get('/api/books', async (req, res) => {
