@@ -9,6 +9,7 @@ import { normalizeAuthors } from './utils/normalizeAuthors.js';
 import notionService from './services/notion.js';
 import logger, { correlationIdMiddleware, requestLogger } from './utils/logger.js';
 import { createRateLimiter, createStrictRateLimiter } from './middleware/rateLimiter.js';
+import { performanceMonitoring, initPerformanceTracking } from './middleware/performance.js';
 import healthRouter from './routes/health.js';
 import usersRouter from './routes/users.js';
 import paymentsRouter from './payments/stripe.routes.js';
@@ -143,6 +144,10 @@ app.use(helmet({
 // Correlation ID and structured logging middleware
 app.use(correlationIdMiddleware);
 app.use(requestLogger);
+
+// Performance monitoring middleware
+app.use(performanceMonitoring);
+initPerformanceTracking(app);
 
 // Performance middleware
 app.use(compression());

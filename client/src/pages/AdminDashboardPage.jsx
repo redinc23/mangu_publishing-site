@@ -97,6 +97,21 @@ export default function AdminDashboardPage() {
           </div>
         </section>
 
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-green-500/10 to-blue-500/10 p-6 space-y-4 mb-10">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold">📊 Analytics Dashboard</h2>
+            <Link
+              to="/admin/analytics"
+              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-green-500 to-blue-500 px-4 py-2 text-sm font-semibold hover:opacity-90 transition"
+            >
+              View Analytics →
+            </Link>
+          </div>
+          <p className="text-white/70">
+            Track platform metrics, revenue, user activity, and top-performing content in real-time.
+          </p>
+        </section>
+
         <section className="rounded-3xl border border-white/10 bg-black/40 p-6 space-y-4">
           <h2 className="text-2xl font-semibold">Route checklist</h2>
           <div className="grid gap-4 md:grid-cols-2">
@@ -108,6 +123,7 @@ export default function AdminDashboardPage() {
               { path: '/profile', status: 'reads session', description: 'Uses Zustand store' },
               { path: '/audiobooks/audio-1', status: 'player ready', description: 'Chapters + CTA back to book' },
               { path: '/admin', status: 'you are here', description: 'High-level counters' },
+              { path: '/admin/analytics', status: 'NEW', description: 'Real-time metrics & performance' },
               { path: '/signin', status: 'entry point', description: 'Mock auth + redirect' }
             ].map((item) => (
               <div

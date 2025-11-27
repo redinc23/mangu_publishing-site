@@ -4,10 +4,14 @@ import {
   getAdminBook,
   createBook,
   updateBook,
-  deleteBook
+  deleteBook,
+  getAnalytics
 } from './admin.controller.js';
 
 const router = Router();
+
+// GET /api/admin/analytics - Get analytics dashboard data
+router.get('/analytics', getAnalytics);
 
 // GET /api/admin/books - Get all books for admin management
 router.get('/books', getAdminBooks);

@@ -542,3 +542,90 @@ export async function deleteBook(req, res) {
     res.status(500).json({ error: 'Failed to delete book' });
   }
 }
+
+export async function getAnalytics(req, res) {
+  if (!ensureAdmin(req, res)) {
+    return;
+  }
+
+  const dbPool = getDbPool(req, res);
+  if (!dbPool) {
+    return;
+  }
+
+  try {
+    // Get aggregate statistics
+    const statsQuery = `
+      SELECT
+        (SELECT COUNT(*) FROM users) as total_users,
+        (SELECT COUNT(*) FROM books) as total_books,
+        (SELECT COUNT(*) FROM orders WHERE status = 'completed') as total_orders,
+        (SELECT COALESCE(SUM(total_cents), 0) FROM orders WHERE status = 'completed') as total_revenue
+    `;
+    
+    const statsResult = await dbPool.query(statsQuery);
+    
+    // Get recent orders with user information
+    const recentOrdersQuery = `
+      SELECT 
+        o.id,
+        o.user_id,
+        o.total_cents,
+        o.status,
+        o.created_at,
+        u.email,
+        u.full_name
+      FROM orders o
+      LEFT JOIN users u ON o.user_id = u.id
+      ORDER BY o.created_at DESC
+      LIMIT 10
+    `;
+    
+    const recentOrdersResult = await dbPool.query(recentOrdersQuery);
+    
+    // Get top selling books
+    const topBooksQuery = `
+      SELECT 
+        b.id,
+        b.title,
+        b.price_cents,
+        COUNT(oi.id) as order_count,
+        SUM(oi.quantity) as total_sold
+      FROM books b
+      LEFT JOIN order_items oi ON b.id = oi.book_id
+      GROUP BY b.id, b.title, b.price_cents
+      ORDER BY total_sold DESC
+      LIMIT 5
+    `;
+    
+    const topBooksResult = await dbPool.query(topBooksQuery).catch(() => ({ rows: [] }));
+    
+    res.json({
+      stats: {
+        totalUsers: parseInt(statsResult.rows[0].total_users) || 0,
+        totalBooks: parseInt(statsResult.rows[0].total_books) || 0,
+        totalOrders: parseInt(statsResult.rows[0].total_orders) || 0,
+        totalRevenue: parseInt(statsResult.rows[0].total_revenue) || 0
+      },
+      recentOrders: recentOrdersResult.rows.map(order => ({
+        id: order.id,
+        userId: order.user_id,
+        userEmail: order.email,
+        userName: order.full_name,
+        totalCents: order.total_cents,
+        status: order.status,
+        createdAt: order.created_at
+      })),
+      topBooks: topBooksResult.rows.map(book => ({
+        id: book.id,
+        title: book.title,
+        priceCents: book.price_cents,
+        orderCount: parseInt(book.order_count) || 0,
+        totalSold: parseInt(book.total_sold) || 0
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch analytics data' });
+  }
+}

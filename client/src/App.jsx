@@ -34,6 +34,7 @@ import ProfilePageV2 from './pages/ProfilePageV2';
 import CartPageV2 from './pages/CartPageV2';
 import AudiobookPlayerPage from './pages/AudiobookPlayerPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
 import AdminBooksPage from './features/admin/AdminBooksPage';
 import AdminBookNewPage from './features/admin/AdminBookNewPage';
 import BookEditPage from './features/admin/BookEditPage';
@@ -49,92 +50,102 @@ function App() {
   usePageTracking();
 
   return (
-    <Routes>
-      {/* Public routes with layout */}
-      <Route path="/" element={<Layout />}>
-        <Route index element={<HomePageV2 />} />
-        <Route path="library" element={<LibraryPageV2 />} />
-        <Route path="audiobooks" element={<LibraryPage />} />
-        <Route path="videos" element={<LibraryPage />} />
-        <Route path="magazines" element={<LibraryPage />} />
-        <Route path="podcasts" element={<LibraryPage />} />
-        <Route path="documentaries" element={<LibraryPage />} />
-        <Route path="audiobooks/:audioId" element={<AudiobookPlayerPage />} />
-        <Route path="book/:id" element={<BookDetailsPageV2 />} />
-        <Route path="profile" element={<ProfilePageV2 />} />
-        <Route path="cart" element={<CartPageV2 />} />
-        <Route path="bookmarks" element={<ProfilePage />} />
-        <Route path="history" element={<ProfilePage />} />
-        <Route path="recommendations" element={<ProfilePage />} />
-        <Route path="gift-cards" element={<ProfilePage />} />
-        <Route path="about" element={<AboutPage />} />
-        <Route path="careers" element={<NotFoundPage />} />
-        <Route path="press" element={<NotFoundPage />} />
-        <Route path="events" element={<EventsHubPage />} />
-        <Route path="events/:id" element={<EventDetailsPage />} />
-        <Route path="authors" element={<AuthorsPage />} />
-        <Route path="authors/:id" element={<AuthorDetailPage />} />
-        <Route path="blog" element={<BlogHubPage />} />
-        <Route path="blog/article/:id" element={<BlogArticlePage />} />
-        <Route path="author-portal" element={<AuthorPortalDashboard />} />
-        <Route path="author-portal/projects" element={<AuthorProjectsPage />} />
-        <Route path="author-portal/submit" element={<NotFoundPage />} />
-        <Route path="series" element={<SeriesPage />} />
-        <Route path="series/:id" element={<SeriesDetailPage />} />
-        <Route path="genres" element={<GenresPage />} />
-        <Route path="genres/:id" element={<GenreDetailPage />} />
-        <Route path="store" element={<BookStorePage />} />
-        <Route path="newsletter" element={<NewsletterPage />} />
-        <Route path="contact" element={<ContactPage />} />
-        <Route path="help" element={<HelpPage />} />
-        <Route path="accessibility" element={<NotFoundPage />} />
-        <Route path="devices" element={<NotFoundPage />} />
-        <Route path="terms" element={<TermsPage />} />
-        <Route path="privacy" element={<PrivacyPage />} />
-        <Route
-          path="admin"
-          element={
-            <ProtectedRoute requireAdmin>
-              <AdminDashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="admin/books"
-          element={
-            <ProtectedRoute requireAdmin>
-              <AdminBooksPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="admin/books/new"
-          element={
-            <ProtectedRoute requireAdmin>
-              <AdminBookNewPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="admin/books/:id/edit"
-          element={
-            <ProtectedRoute requireAdmin>
-              <BookEditPage />
-            </ProtectedRoute>
-          }
-        />
-      </Route>
+    <>
+      <Routes>
+        {/* Public routes with layout */}
+        <Route path="/" element={<Layout />}>
+          <Route index element={<HomePageV2 />} />
+          <Route path="library" element={<LibraryPageV2 />} />
+          <Route path="audiobooks" element={<LibraryPage />} />
+          <Route path="videos" element={<LibraryPage />} />
+          <Route path="magazines" element={<LibraryPage />} />
+          <Route path="podcasts" element={<LibraryPage />} />
+          <Route path="documentaries" element={<LibraryPage />} />
+          <Route path="audiobooks/:audioId" element={<AudiobookPlayerPage />} />
+          <Route path="book/:id" element={<BookDetailsPageV2 />} />
+          <Route path="profile" element={<ProfilePageV2 />} />
+          <Route path="cart" element={<CartPageV2 />} />
+          <Route path="bookmarks" element={<ProfilePage />} />
+          <Route path="history" element={<ProfilePage />} />
+          <Route path="recommendations" element={<ProfilePage />} />
+          <Route path="gift-cards" element={<ProfilePage />} />
+          <Route path="about" element={<AboutPage />} />
+          <Route path="careers" element={<NotFoundPage />} />
+          <Route path="press" element={<NotFoundPage />} />
+          <Route path="events" element={<EventsHubPage />} />
+          <Route path="events/:id" element={<EventDetailsPage />} />
+          <Route path="authors" element={<AuthorsPage />} />
+          <Route path="authors/:id" element={<AuthorDetailPage />} />
+          <Route path="blog" element={<BlogHubPage />} />
+          <Route path="blog/article/:id" element={<BlogArticlePage />} />
+          <Route path="author-portal" element={<AuthorPortalDashboard />} />
+          <Route path="author-portal/projects" element={<AuthorProjectsPage />} />
+          <Route path="author-portal/submit" element={<NotFoundPage />} />
+          <Route path="series" element={<SeriesPage />} />
+          <Route path="series/:id" element={<SeriesDetailPage />} />
+          <Route path="genres" element={<GenresPage />} />
+          <Route path="genres/:id" element={<GenreDetailPage />} />
+          <Route path="store" element={<BookStorePage />} />
+          <Route path="newsletter" element={<NewsletterPage />} />
+          <Route path="contact" element={<ContactPage />} />
+          <Route path="help" element={<HelpPage />} />
+          <Route path="accessibility" element={<NotFoundPage />} />
+          <Route path="devices" element={<NotFoundPage />} />
+          <Route path="terms" element={<TermsPage />} />
+          <Route path="privacy" element={<PrivacyPage />} />
+          <Route
+            path="admin"
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="admin/analytics"
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminAnalyticsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="admin/books"
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminBooksPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="admin/books/new"
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminBookNewPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="admin/books/:id/edit"
+            element={
+              <ProtectedRoute requireAdmin>
+                <BookEditPage />
+              </ProtectedRoute>
+            }
+          />
+        </Route>
 
-      {/* Auth routes without layout */}
-      <Route path="signin" element={<SignInPageV2 />} />
-      <Route path="signup" element={<SignInPageV2 />} />
+        {/* Auth routes without layout */}
+        <Route path="signin" element={<SignInPageV2 />} />
+        <Route path="signup" element={<SignInPageV2 />} />
 
-      {/* 404 catch-all */}
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
-    
-    {/* Dev Error Testing (only in development) */}
-    <DevErrorTest />
+        {/* 404 catch-all */}
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+
+      {/* Dev Error Testing (only in development) */}
+      <DevErrorTest />
+    </>
   );
 }
 
