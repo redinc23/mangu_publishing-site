@@ -14,6 +14,9 @@ import libraryRoutes from './features/library/library.router.js';
 import authorsRoutes from './features/authors/authors.router.js';
 import wishlistsRoutes from './features/wishlists/wishlists.router.js';
 import readingSessionsRoutes from './features/reading-sessions/reading-sessions.router.js';
+import eventsRoutes from './features/events/events.router.js';
+import bookClubsRoutes from './features/book-clubs/book-clubs.router.js';
+import blogRoutes from './features/blog/blog.router.js';
 import { authCognito } from './middleware/authCognito.js';
 
 // Load environment variables
@@ -306,6 +309,15 @@ app.use('/api/wishlists', authCognito(), wishlistsRoutes);
 
 // Reading Sessions routes (requires auth)
 app.use('/api/reading-sessions', authCognito(), readingSessionsRoutes);
+
+// Events routes
+app.use('/api/events', eventsRoutes);
+
+// Book Clubs routes
+app.use('/api/book-clubs', bookClubsRoutes);
+
+// Blog routes
+app.use('/api/blog', blogRoutes);
 
 // Books API with enhanced error handling and caching
 app.get('/api/books', async (req, res) => {
