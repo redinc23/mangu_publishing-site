@@ -7,6 +7,18 @@ import dotenv from 'dotenv';
 import { formatBook } from './utils/formatBook.js';
 import { normalizeAuthors } from './utils/normalizeAuthors.js';
 import notionService from './services/notion.js';
+import libraryRouter from './features/library/library.router.js';
+import cartRouter from './features/cart/cart.router.js';
+import {
+    getFallbackBookById,
+    getFallbackBooks,
+    getFallbackFeaturedBook,
+    getFallbackGenres,
+    getFallbackNewReleases,
+    getFallbackTopRatedBooks,
+    getFallbackTrendingBooks,
+    hasFallbackBooks
+} from './data/fallbackStore.js';
 
 // Load environment variables
 dotenv.config();
@@ -14,6 +26,18 @@ dotenv.config();
 export const app = express();
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const NUMERIC_ID_REGEX = /^\d+$/;
+const truthyEnvValues = new Set(['1', 'true', 'yes', 'y', 'on']);
+
+const isTruthyEnv = (value) => {
+    if (value === undefined || value === null) {
+        return false;
+    }
+    return truthyEnvValues.has(String(value).trim().toLowerCase());
+};
+
+const DEV_FALLBACK_MODE = NODE_ENV !== 'production' && isTruthyEnv(process.env.DEV_ALLOW_NO_DB);
+const FALLBACK_BOOKS_READY = DEV_FALLBACK_MODE && hasFallbackBooks();
 
 app.locals.db = null;
 app.locals.redis = null;
@@ -126,6 +150,9 @@ function parseOptionalBoolean(value) {
 }
 
 // Enhanced security middleware
+const devOrigins = ["http://localhost:5173", "http://localhost:4173"];
+const baseConnectSrc = ["'self'", "https://api.stripe.com", ...devOrigins];
+
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -133,7 +160,7 @@ app.use(helmet({
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
             scriptSrc: ["'self'", "https://js.stripe.com"],
             imgSrc: ["'self'", "data:", "https:", "blob:"],
-            connectSrc: ["'self'", "https://api.stripe.com"],
+            connectSrc: baseConnectSrc,
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
             frameSrc: ["https://js.stripe.com"]
         }
@@ -169,10 +196,16 @@ app.use(express.urlencoded({
     limit: process.env.MAX_FILE_SIZE || '10mb' 
 }));
 
+// Prevent stale cached API responses during development
+app.use((req, res, next) => {
+    res.set('Cache-Control', 'no-store');
+    next();
+});
+
 // CORS configuration
 const corsOrigins = process.env.CORS_ORIGINS 
     ? process.env.CORS_ORIGINS.split(',')
-    : ['http://localhost:5173', 'http://localhost:3000'];
+    : ['http://localhost:5173', 'http://localhost:4173', 'http://localhost:3000'];
 
 app.use(cors({
     origin: (origin, callback) => {
@@ -187,8 +220,9 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Trust proxy for production deployments
-app.set('trust proxy', true);
+// Trust proxy only when explicitly configured
+const trustProxySetting = process.env.TRUST_PROXY;
+app.set('trust proxy', trustProxySetting !== undefined ? isTruthyEnv(trustProxySetting) : NODE_ENV === 'production');
 
 // Rate limiting
 import rateLimit from 'express-rate-limit';
@@ -278,13 +312,15 @@ app.get('/health', (req, res) => {
 // Books API with enhanced error handling and caching
 app.get('/api/books', async (req, res) => {
     try {
-        const dbPool = req.app.locals.db;
-        if (!dbPool) {
-            return res.status(503).json({ error: 'Database unavailable' });
-        }
-
         const limit = Math.min(parseInt(req.query.limit) || 20, 100);
         const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+        const dbPool = req.app.locals.db;
+        if (!dbPool) {
+            if (FALLBACK_BOOKS_READY) {
+                return res.json(getFallbackBooks(limit, offset));
+            }
+            return res.status(503).json({ error: 'Database unavailable' });
+        }
 
         const query = `
             SELECT b.*,
@@ -318,6 +354,13 @@ app.get('/api/books/featured', async (req, res) => {
     try {
         const dbPool = req.app.locals.db;
         if (!dbPool) {
+            if (FALLBACK_BOOKS_READY) {
+                const fallbackFeatured = getFallbackFeaturedBook();
+                if (!fallbackFeatured) {
+                    return res.status(404).json({ error: 'No featured books available' });
+                }
+                return res.json(fallbackFeatured);
+            }
             return res.status(503).json({ error: 'Database unavailable' });
         }
 
@@ -397,6 +440,9 @@ app.get('/api/books/trending', async (req, res) => {
         const offset = Math.max(parseInt(req.query.offset) || 0, 0);
         const dbPool = req.app.locals.db;
         if (!dbPool) {
+            if (FALLBACK_BOOKS_READY) {
+                return res.json(getFallbackTrendingBooks(limit, offset));
+            }
             return res.status(503).json({ error: 'Database unavailable' });
         }
 
@@ -460,6 +506,82 @@ app.get('/api/books/trending', async (req, res) => {
         console.error('Trending books query error:', error);
         res.status(500).json({ 
             error: 'Failed to fetch trending books',
+            message: NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
+
+app.get('/api/books/new-releases', async (req, res) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit) || 12, 50);
+        const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+        const dbPool = req.app.locals.db;
+        if (!dbPool) {
+            if (FALLBACK_BOOKS_READY) {
+                return res.json(getFallbackNewReleases(limit, offset));
+            }
+            return res.status(503).json({ error: 'Database unavailable' });
+        }
+
+        const query = `
+            SELECT b.*,
+                   array_agg(DISTINCT c.name) as categories,
+                   array_agg(DISTINCT a.name) as authors
+            FROM books b
+            LEFT JOIN book_categories bc ON b.id = bc.book_id
+            LEFT JOIN categories c ON bc.category_id = c.id
+            LEFT JOIN book_authors ba ON b.id = ba.book_id
+            LEFT JOIN authors a ON ba.author_id = a.id
+            WHERE b.is_active = true AND b.is_new_release = true
+            GROUP BY b.id
+            ORDER BY b.publication_date DESC NULLS LAST, b.created_at DESC
+            LIMIT $1 OFFSET $2
+        `;
+
+        const result = await dbPool.query(query, [limit, offset]);
+        res.json(result.rows.map(formatBook));
+    } catch (error) {
+        console.error('New releases query error:', error);
+        res.status(500).json({
+            error: 'Failed to fetch new releases',
+            message: NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
+
+app.get('/api/books/top-rated', async (req, res) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+        const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+        const dbPool = req.app.locals.db;
+        if (!dbPool) {
+            if (FALLBACK_BOOKS_READY) {
+                return res.json(getFallbackTopRatedBooks(limit, offset));
+            }
+            return res.status(503).json({ error: 'Database unavailable' });
+        }
+
+        const query = `
+            SELECT b.*,
+                   array_agg(DISTINCT c.name) as categories,
+                   array_agg(DISTINCT a.name) as authors
+            FROM books b
+            LEFT JOIN book_categories bc ON b.id = bc.book_id
+            LEFT JOIN categories c ON bc.category_id = c.id
+            LEFT JOIN book_authors ba ON b.id = ba.book_id
+            LEFT JOIN authors a ON ba.author_id = a.id
+            WHERE b.is_active = true
+            GROUP BY b.id
+            ORDER BY b.rating DESC NULLS LAST, b.rating_count DESC NULLS LAST, b.created_at DESC
+            LIMIT $1 OFFSET $2
+        `;
+
+        const result = await dbPool.query(query, [limit, offset]);
+        res.json(result.rows.map(formatBook));
+    } catch (error) {
+        console.error('Top rated books query error:', error);
+        res.status(500).json({
+            error: 'Failed to fetch top rated books',
             message: NODE_ENV === 'development' ? error.message : 'Internal server error'
         });
     }
@@ -791,13 +913,22 @@ app.get('/api/books/:id', async (req, res) => {
     try {
         const { id } = req.params;
         
-        // Validate UUID format
-        if (!UUID_REGEX.test(id)) {
+        const isUuid = UUID_REGEX.test(id);
+        const isNumericId = NUMERIC_ID_REGEX.test(id);
+
+        if (!isUuid && !(FALLBACK_BOOKS_READY && isNumericId)) {
             return res.status(400).json({ error: 'Invalid book ID format' });
         }
 
         const dbPool = req.app.locals.db;
         if (!dbPool) {
+            if (FALLBACK_BOOKS_READY) {
+                const fallbackBook = getFallbackBookById(id);
+                if (!fallbackBook) {
+                    return res.status(404).json({ error: 'Book not found' });
+                }
+                return res.json(fallbackBook);
+            }
             return res.status(503).json({ error: 'Database unavailable' });
         }
 
@@ -819,6 +950,36 @@ app.get('/api/books/:id', async (req, res) => {
         console.error('Book detail query error:', error);
         res.status(500).json({ 
             error: 'Failed to fetch book details',
+            message: NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
+
+app.get('/api/books/all/genres', async (req, res) => {
+    try {
+        const dbPool = req.app.locals.db;
+        if (!dbPool) {
+            if (FALLBACK_BOOKS_READY) {
+                return res.json(getFallbackGenres());
+            }
+            return res.status(503).json({ error: 'Database unavailable' });
+        }
+
+        const query = `
+            SELECT DISTINCT c.name
+            FROM categories c
+            INNER JOIN book_categories bc ON bc.category_id = c.id
+            INNER JOIN books b ON b.id = bc.book_id
+            WHERE c.is_active = true AND b.is_active = true
+            ORDER BY c.name ASC
+        `;
+
+        const result = await dbPool.query(query);
+        res.json(result.rows.map((row) => row.name));
+    } catch (error) {
+        console.error('Genres query error:', error);
+        res.status(500).json({
+            error: 'Failed to fetch genres',
             message: NODE_ENV === 'development' ? error.message : 'Internal server error'
         });
     }
@@ -852,6 +1013,107 @@ app.get('/api/categories', async (req, res) => {
         });
     }
 });
+
+// Genres API - Get books by genre
+app.get('/api/genres/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+        const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+        
+        const dbPool = req.app.locals.db;
+        if (!dbPool) {
+            return res.status(503).json({ error: 'Database unavailable' });
+        }
+
+        const query = `
+            SELECT DISTINCT b.*,
+                   array_agg(DISTINCT c.name) as categories,
+                   array_agg(DISTINCT a.name) as authors
+            FROM books b
+            INNER JOIN book_categories bc ON b.id = bc.book_id
+            INNER JOIN categories cat ON bc.category_id = cat.id
+            LEFT JOIN book_categories bc2 ON b.id = bc2.book_id
+            LEFT JOIN categories c ON bc2.category_id = c.id
+            LEFT JOIN book_authors ba ON b.id = ba.book_id
+            LEFT JOIN authors a ON ba.author_id = a.id
+            WHERE b.is_active = true 
+              AND (cat.name ILIKE $1 OR cat.slug ILIKE $1 OR cat.id::text = $1)
+            GROUP BY b.id
+            ORDER BY b.created_at DESC
+            LIMIT $2 OFFSET $3
+        `;
+
+        const result = await dbPool.query(query, [id, limit, offset]);
+        res.json({
+            genre: id,
+            books: result.rows.map(formatBook),
+            pagination: {
+                limit,
+                offset,
+                total: result.rows.length
+            }
+        });
+    } catch (error) {
+        console.error('Genres query error:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch books by genre',
+            message: NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
+
+// Series API - Get books in a series
+app.get('/api/series/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+        const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+        
+        const dbPool = req.app.locals.db;
+        if (!dbPool) {
+            return res.status(503).json({ error: 'Database unavailable' });
+        }
+
+        // Search for books with series tag matching the id
+        const query = `
+            SELECT DISTINCT b.*,
+                   array_agg(DISTINCT c.name) as categories,
+                   array_agg(DISTINCT a.name) as authors
+            FROM books b
+            LEFT JOIN book_categories bc ON b.id = bc.book_id
+            LEFT JOIN categories c ON bc.category_id = c.id
+            LEFT JOIN book_authors ba ON b.id = ba.book_id
+            LEFT JOIN authors a ON ba.author_id = a.id
+            WHERE b.is_active = true 
+              AND ($1 = ANY(b.tags) OR b.series_id::text = $1 OR b.series_name ILIKE $1)
+            GROUP BY b.id
+            ORDER BY b.series_order ASC NULLS LAST, b.created_at DESC
+            LIMIT $2 OFFSET $3
+        `;
+
+        const result = await dbPool.query(query, [id, limit, offset]);
+        res.json({
+            series: id,
+            books: result.rows.map(formatBook),
+            pagination: {
+                limit,
+                offset,
+                total: result.rows.length
+            }
+        });
+    } catch (error) {
+        console.error('Series query error:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch books in series',
+            message: NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
+
+// Register feature routers
+app.use('/api/library', libraryRouter);
+app.use('/api/cart', cartRouter);
 
 // Enhanced error handling middleware
 app.use((err, req, res, next) => {
